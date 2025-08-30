@@ -234,3 +234,95 @@ def list_all_ids(collection_name):
     docs = list(Model.objects())
     return [str(d.id) for d in docs]
 
+
+def _to_plain_value(v):
+    try:
+        if isinstance(v, (dict, list)):
+            return json.dumps(v, ensure_ascii=False)
+        return str(v)
+    except Exception:
+        try:
+            return str(v)
+        except Exception:
+            return ""
+
+
+def document_to_markdown_table(obj):
+    try:
+        data = obj.to_mongo().to_dict()
+    except Exception:
+        try:
+            data = json.loads(obj.to_json())
+        except Exception:
+            data = {}
+
+    lines = []
+    lines.append("| field | value |")
+    lines.append("|---|---|")
+    for k in sorted(list(data.keys())):
+        v = data.get(k)
+        lines.append(f"| {k} | {_to_plain_value(v)} |")
+    return "\n".join(lines)
+
+
+def list_one_markdown(collection_name, doc_id):
+    obj = get_one(collection_name, doc_id)
+    key = normalize_collection_name(collection_name)
+    if key == "product":
+        return list_product_related_markdown(obj)
+    return document_to_markdown_table(obj)
+
+
+def list_all_markdown(collection_name):
+    ids = list_all_ids(collection_name)
+    norm = normalize_collection_name(collection_name) or collection_name
+    lines = []
+    lines.append("| collection | id |")
+    lines.append("|---|---|")
+    for i in ids:
+        lines.append(f"| {norm} | {i} |")
+    return "\n".join(lines)
+
+
+def list_product_related_markdown(product):
+    try:
+        segs = list(CustomerSegment.objects(product=product))
+    except Exception:
+        segs = []
+    try:
+        contribs = list(PricingPlanSegmentContribution.objects(product=product))
+    except Exception:
+        contribs = []
+
+    pricing_ids = []
+    seen = set()
+    for c in contribs:
+        try:
+            pid = str(c.pricing_plan.id) if c.pricing_plan else None
+        except Exception:
+            pid = None
+        if pid and pid not in seen:
+            seen.add(pid)
+            pricing_ids.append(pid)
+
+    lines = []
+    lines.append(document_to_markdown_table(product))
+
+    if segs:
+        lines.append("")
+        lines.append("| customer_segment_id |")
+        lines.append("|---|")
+        for s in segs:
+            try:
+                lines.append(f"| {str(s.id)} |")
+            except Exception:
+                continue
+
+    if pricing_ids:
+        lines.append("")
+        lines.append("| pricing_model_id |")
+        lines.append("|---|")
+        for pid in pricing_ids:
+            lines.append(f"| {pid} |")
+
+    return "\n".join(lines)

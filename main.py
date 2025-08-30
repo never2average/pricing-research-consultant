@@ -11,6 +11,8 @@ from datastore.connectors import (
     delete_many,
     get_one,
     list_all_ids,
+    list_one_markdown,
+    list_all_markdown,
 )
 
 
@@ -89,21 +91,14 @@ elif args.deletemany:
 elif args.list_one:
     collection, doc_id = args.list_one
     try:
-        obj = get_one(collection, doc_id)
-        try:
-            print(obj.to_json())
-        except Exception:
-            from bson import json_util
-            print(json.dumps(obj.to_mongo().to_dict(), default=json_util.default))
+        print(list_one_markdown(collection, doc_id))
     except Exception as e:
         print(f"Error fetching {collection} {doc_id}: {e}")
         sys.exit(1)
 elif args.listall:
     collection = args.listall[0]
     try:
-        ids = list_all_ids(collection)
-        norm = collection
-        print(json.dumps({"collection": norm, "ids": ids}))
+        print(list_all_markdown(collection))
     except Exception as e:
         print(f"Error listing {collection}: {e}")
         sys.exit(1)

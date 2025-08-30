@@ -4,6 +4,7 @@ from utils.openai_client import openai_client
 from pydantic import BaseModel, Field, Optional, List
 from datetime import datetime
 from datastore.models import Product, CustomerSegment, ProductPricingModel, PricingPlanSegmentContribution, TimeseriesData
+from .prompts import pricing_analysis_system_prompt, pricing_analysis_parse_prompt
 
 
 llm_client = instructor.from_litellm(completion)
@@ -60,7 +61,7 @@ Return only fields required by the schema.
         model="gpt-5",
         reasoning={"effort": "high"},
         input=[
-            {"role": "system", "content": "You produce clear pricing forecasts."},
+            {"role": "system", "content": pricing_analysis_system_prompt},
             {"role": "user", "content": prompt}
         ]
     )
@@ -68,7 +69,7 @@ Return only fields required by the schema.
     parsed = llm_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Parse the following into the schema."},
+            {"role": "system", "content": pricing_analysis_parse_prompt},
             {"role": "user", "content": draft.output_text}
         ],
         response_format=PricingAnalysisResponse

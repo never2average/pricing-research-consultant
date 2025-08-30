@@ -2,6 +2,7 @@ import instructor
 from litellm import completion
 from utils.openai_client import openai_client
 from pydantic import BaseModel, Field, Optional, List
+from .prompts import experimental_pricing_recommendation_prompt, parse_into_schema_prompt
 from datetime import datetime
 from datastore.models import Product, ProductPricingModel, CustomerSegment, RecommendedPricingModel, TimeseriesData
 
@@ -28,13 +29,7 @@ class RecommendedPricingModelResponse(BaseModel):
     unit_calculation_logic: str
     min_unit_utilization_period: str
  
-experimental_pricing_recommendation_prompt = """
-Background:
-You are an expert pricing analyst for 
-
-Task:
-
-"""
+ 
 
 def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingModelResponse:
     product = Product.objects.get(id=product_id)
@@ -54,7 +49,7 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
     pricing_response = llm_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Please parse the following text into the given schema"},
+            {"role": "system", "content": parse_into_schema_prompt},
             {"role": "user", "content": new_ab_test_pricing_model.output_text}
         ],
         response_format=RecommendedPricingModelResponse

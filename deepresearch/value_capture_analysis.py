@@ -1,15 +1,9 @@
 import instructor
 from litellm import completion
 from utils.openai_client import openai_client
-
+from .prompts import rabbithole_think_prompt, value_capture_analysis_prompt
+ 
 llm_client = instructor.from_litellm(completion)
-
-rabbithole_think_prompt = """
-You are a rabbit hole thinker. You are given a task and you need to think about it and come up with a plan to solve the task.
-"""
-
-value_capture_analysis_prompt = """
-"""
 
 
 tools = [
@@ -39,11 +33,11 @@ def go_down_rabbithole(hypothesis: str):
     )
     return thoughts.output_text
 
-def agent(segment_roi_analysis: List[str], pricing_analysis: List[str]):
+def agent(segment_roi_analysis, pricing_analysis, product_research):
     thoughts = openai_client.responses.create(
         model="gpt-5",
         instruction=value_capture_analysis_prompt,
-        input=f"## Segment-wise ROI analysis for customer\n{segment_roi_analysis}\n\n----------------------------------\n\n## Pricing Analysis Report\n{pricing_analysis}",
+        input=f"## Product Research Context\n{product_research}\n\n----------------------------------\n\n## Segment-wise ROI analysis for customer\n{segment_roi_analysis}\n\n----------------------------------\n\n## Pricing Analysis Report\n{pricing_analysis}",
         reasoning={"effort": "high", "summary": "detailed"},
         tools=tools,
         tool_choice="auto",
