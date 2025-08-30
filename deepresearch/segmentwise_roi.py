@@ -1,10 +1,8 @@
-import instructor
-from litellm import completion
-from utils.openai_client import openai_client
+from utils.openai_client import openai_client, litellm_client
 from datastore.models import Product, CustomerSegment, ProductPricingModel, CustomerUsageAnalysis
 from .prompts import roi_prompt
 
-llm_client = instructor.from_litellm(completion)
+
 
 def agent(product_id, product_research):
     all_segments = CustomerSegment.objects.filter(product=product_id)

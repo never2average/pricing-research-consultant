@@ -1,12 +1,10 @@
-import instructor
-from litellm import completion
-from utils.openai_client import openai_client
+from utils.openai_client import openai_client, litellm_client
 from pydantic import BaseModel, Field, Optional, List
 from .prompts import experimental_pricing_recommendation_prompt, parse_into_schema_prompt
 from datetime import datetime
 from datastore.models import Product, ProductPricingModel, CustomerSegment, RecommendedPricingModel, TimeseriesData
 
-llm_client = instructor.from_litellm(completion)
+
 
 class ForwardProjections(BaseModel):
     date: str
@@ -46,7 +44,7 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
         }]
     )
     
-    pricing_response = llm_client.chat.completions.create(
+    pricing_response = litellm_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": parse_into_schema_prompt},

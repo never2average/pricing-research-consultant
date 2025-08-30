@@ -1,9 +1,7 @@
-import instructor
-from litellm import completion
-from utils.openai_client import openai_client
+from utils.openai_client import openai_client, litellm_client
 from .prompts import rabbithole_think_prompt, value_capture_analysis_prompt
  
-llm_client = instructor.from_litellm(completion)
+
 
 
 tools = [
