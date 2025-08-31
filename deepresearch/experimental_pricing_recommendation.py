@@ -28,7 +28,6 @@ class RecommendedPricingModelResponse(BaseModel):
     min_unit_utilization_period: str
  
  
-
 def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingModelResponse:
     product = Product.objects.get(id=product_id)
     new_ab_test_pricing_model = openai_client.responses.create(

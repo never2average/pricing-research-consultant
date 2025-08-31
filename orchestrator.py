@@ -3,12 +3,30 @@ from deepresearch.segmentwise_roi import agent as segmentwise_roi_agent
 from deepresearch.pricing_analysis import agent as pricing_analysis_agent
 from deepresearch.value_capture_analysis import agent as value_capture_analysis_agent
 from deepresearch.experimental_pricing_recommendation import agent as experimental_pricing_recommendation_agent
+from concurrent.futures import ThreadPoolExecutor
 
 
 def final_agent(product_id, usage_scope=None, customer_segment_id=None):
+    # Step 1: Run product offering agent (must be first)
     product_research = product_offering_agent(product_id, usage_scope)
-    segment_research = segmentwise_roi_agent(product_id, product_research)
-    pricing_research = pricing_analysis_agent(product_id)
+
+    # Step 2: Run segmentwise ROI and pricing analysis in parallel
+    def run_segment_roi():
+        return segmentwise_roi_agent(product_id, product_research)
+
+    def run_pricing_analysis():
+        return pricing_analysis_agent(product_id)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Submit both tasks
+        segment_future = executor.submit(run_segment_roi)
+        pricing_future = executor.submit(run_pricing_analysis)
+
+        # Wait for both to complete and get results
+        segment_research = segment_future.result()
+        pricing_research = pricing_future.result()
+
+    # Step 3: Run remaining agents sequentially
     value_capture_research = value_capture_analysis_agent(segment_research, pricing_research, product_research)
     experimental_pricing_research = experimental_pricing_recommendation_agent(product_id, value_capture_research)
     pr = None

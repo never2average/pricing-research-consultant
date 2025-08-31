@@ -3,7 +3,7 @@ from utils.openai_client import openai_client
 from .prompts import product_deep_research_prompt
 
 
-
+# it needs to get components of the product deployment and needs to differntiate between fixed usage components and variable usage components
 def agent(product_id=None, usage_scope=""):
     product = Product.objects.get(id=product_id)
     input_data = product_deep_research_prompt.format(
