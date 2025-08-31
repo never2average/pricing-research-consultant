@@ -1,7 +1,9 @@
-from utils.openai_client import openai_client, litellm_client
-from pydantic import BaseModel, Field, Optional, List
+from bson import ObjectId
 from datetime import datetime
-from datastore.models import Product, CustomerSegment, ProductPricingModel, PricingPlanSegmentContribution, TimeseriesData
+from pydantic import BaseModel, Field, Optional, List
+from utils.openai_client import openai_client, litellm_client
+from datastore.models import Product, CustomerSegment, ProductPricingModel
+from datastore.models import PricingPlanSegmentContribution, TimeseriesData
 from .prompts import pricing_analysis_system_prompt, structured_parsing_system_prompt
 
 
@@ -10,131 +12,97 @@ class RevenuePoint(BaseModel):
     revenue: float
 
 class SegmentPlanForecast(BaseModel):
+    pricing_plan_id: Optional[str] = Field(default=None)
     customer_segment_uid: Optional[str] = Field(default=None)
     customer_segment_name: Optional[str] = Field(default=None)
-    pricing_plan_id: Optional[str] = Field(default=None)
-    number_of_active_subscriptions: Optional[int] = Field(default=None)
-    number_of_active_subscriptions_forecast: Optional[int] = Field(default=None)
-    revenue_ts_data: List[RevenuePoint] = []
-    revenue_forecast_ts_data: List[RevenuePoint] = []
+    revenue_forecast_ts_data: Optional[List[RevenuePoint]] = Field(default=None)
+    active_subscriptions_forecast: Optional[List[RevenuePoint]] = Field(default=None)
 
 class PricingAnalysisResponse(BaseModel):
     forecasts: List[SegmentPlanForecast]
 
-def agent(product_id: str):
-    product = Product.objects.get(id=product_id)
-    all_segments = CustomerSegment.objects.filter(product=product)
-    all_pricing_plans = ProductPricingModel.objects.all()
-    
-    context_segments = []
-    for s in all_segments:
-        context_segments.append({
-            "id": str(s.id),
-            "uid": s.customer_segment_uid,
-            "name": s.customer_segment_name,
-            "description": s.customer_segment_description
-        })
-    
-    context_plans = []
-    for p in all_pricing_plans:
-        context_plans.append({
-            "id": str(p.id),
-            "unit_price": p.unit_price,
-            "min_unit_count": p.min_unit_count,
-            "unit_calculation_logic": p.unit_calculation_logic,
-            "min_unit_utilization_period": p.min_unit_utilization_period
-        })
-    
+def agent(product_id: str, segment_ids: List[str]=None):
+    product = Product.objects(id=ObjectId(product_id)).first()
+    if segment_ids:
+        all_segments = CustomerSegment.objects(
+            product=ObjectId(product_id),
+            id__in=segment_ids
+        ).all()
+    else:
+        all_segments = CustomerSegment.objects(
+            product=ObjectId(product_id),
+        ).all()
+        
+    all_segment_pricing_plans = PricingPlanSegmentContribution.objects(
+        product=ObjectId(product_id),
+        customer_segment__in=all_segments
+    ).all()
+
+    # Build markdown table for segmentwise usage/revenue
+    table_rows = ["| Segment | Plan | Current Revenue | Current Subscriptions | Forecast Revenue | Forecast Subscriptions |"]
+    table_rows.append("|---------|------|-----------------|----------------------|------------------|------------------------|")
+
+    for plan_contribution in all_segment_pricing_plans:
+        segment_name = plan_contribution.customer_segment.customer_segment_name
+        plan_name = plan_contribution.pricing_plan.unit_calculation_logic or f"Plan {str(plan_contribution.pricing_plan.id)}"
+
+        # Get latest revenue and subscriptions data
+        current_revenue = plan_contribution.revenue_ts_data[-1].value if plan_contribution.revenue_ts_data else 0
+        current_subs = plan_contribution.active_subscriptions[-1].value if plan_contribution.active_subscriptions else 0
+
+        # Get latest forecast data
+        forecast_revenue = plan_contribution.revenue_forecast_ts_data[-1].value if plan_contribution.revenue_forecast_ts_data else 0
+        forecast_subs = plan_contribution.active_subscriptions_forecast[-1].value if plan_contribution.active_subscriptions_forecast else 0
+
+        table_rows.append(f"| {segment_name} | {plan_name} | ${current_revenue:,.0f} | {current_subs:,.0f} | ${forecast_revenue:,.0f} | {forecast_subs:,.0f} |")
+
+    table_content = "\n".join(table_rows)
+
     prompt = f"""
-You are a pricing analyst. Given segments and pricing plans for product '{product.name}', output structured forecasts per segment-plan.
+## Product Name:
+{product.name}
 
-Segments:\n{context_segments}\n\nPlans:\n{context_plans}
+## Product Description:
+{product.description}
 
-Return only fields required by the schema.
+## Pricing Content:
+{table_content}
 """
     
     draft = openai_client.responses.create(
         model="gpt-5",
-        reasoning={"effort": "high"},
+        reasoning={"effort": "low"},
+        temperature=0.1,
+        truncation="auto",
+        tool_choice="auto",
+        max_tool_calls=10,
+        tools=[
+            {"type": "web_search_preview"},
+            {
+                "type": "file_search",
+                "vector_store_ids": [
+                    product.vector_store_id
+                ]
+            },
+            {
+                "type": "code_interpreter",
+                "container": {"type": "auto"}
+            }
+        ],
         input=[
             {"role": "system", "content": pricing_analysis_system_prompt},
             {"role": "user", "content": prompt}
         ]
     )
-    
+
     parsed = litellm_client.chat.completions.create(
         model="together_ai/moonshotai/Kimi-K2-Instruct",
         messages=[
             {"role": "system", "content": structured_parsing_system_prompt},
             {"role": "user", "content": draft.output_text}
         ],
-        response_model=PricingAnalysisResponse
+        response_model=PricingAnalysisResponse,
+        temperature=0.0
     )
-    
-    created_ids = []
-    for f in parsed.forecasts:
-        seg = None
-        if f.customer_segment_uid:
-            seg = CustomerSegment.objects(product=product, customer_segment_uid=f.customer_segment_uid).first()
-        if seg is None and f.customer_segment_name:
-            seg = CustomerSegment.objects(product=product, customer_segment_name=f.customer_segment_name).first()
-        if seg is None:
-            continue
-        
-        plan = None
-        if f.pricing_plan_id:
-            try:
-                plan = ProductPricingModel.objects.get(id=f.pricing_plan_id)
-            except:
-                plan = None
-        if plan is None:
-            continue
-        
-        revenue_ts = []
-        for rp in f.revenue_ts_data:
-            dt = None
-            try:
-                dt = datetime.fromisoformat(rp.date)
-            except:
-                try:
-                    dt = datetime.strptime(rp.date, "%Y-%m-%d")
-                except:
-                    try:
-                        dt = datetime.strptime(rp.date, "%Y-%m-%dT%H:%M:%S")
-                    except:
-                        dt = None
-            if dt is not None:
-                revenue_ts.append(TimeseriesData(date=dt, value=rp.revenue))
-        
-        revenue_forecast_ts = []
-        for rp in f.revenue_forecast_ts_data:
-            dt = None
-            try:
-                dt = datetime.fromisoformat(rp.date)
-            except:
-                try:
-                    dt = datetime.strptime(rp.date, "%Y-%m-%d")
-                except:
-                    try:
-                        dt = datetime.strptime(rp.date, "%Y-%m-%dT%H:%M:%S")
-                    except:
-                        dt = None
-            if dt is not None:
-                revenue_forecast_ts.append(TimeseriesData(date=dt, value=rp.revenue))
-        
-        doc = PricingPlanSegmentContribution(
-            product=product,
-            customer_segment=seg,
-            pricing_plan=plan,
-            number_of_active_subscriptions=f.number_of_active_subscriptions or 0,
-            number_of_active_subscriptions_forecast=f.number_of_active_subscriptions_forecast or 0,
-            revenue_ts_data=revenue_ts,
-            revenue_forecast_ts_data=revenue_forecast_ts
-        )
-        doc.save()
-        created_ids.append(str(doc.id))
-    
-    return {
-        'pricing_analysis_response': parsed,
-        'created_contribution_ids': created_ids
-    }
+
+    return draft.output_text

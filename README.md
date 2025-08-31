@@ -1,7 +1,44 @@
 ## Agent Purpose
 
+**Transform AI pricing from guesswork to science with ROI-based optimization.**
+
+For AI companies, traditional pricing models fail to capture your technology's true value. This intelligent agent analyzes your pricing ecosystem to deliver:
+- **Segment-specific ROI analysis** for optimal pricing per customer type
+- **Dynamic recommendations** based on usage patterns and value capture
+- **A/B testing frameworks** for experimental validation
+- **Data-driven strategies** that maximize revenue and reduce churn
+
+### Essential Documentation Required
+
+#### 📋 Product Docs
+- ICP descriptions with use cases
+- Feature catalogs with value propositions
+- Customer success stories with ROI metrics
+
+#### 🏗️ Infrastructure Docs
+- Usage metrics and cost structures
+- Scalability constraints and benchmarks
+- Integration requirements
+
+#### 🤖 AI Usage Docs
+- Model performance metrics
+- Token consumption patterns
+- Usage analytics and adoption data
+
+**Ready to optimize your AI pricing?** Follow the setup instructions below.
+
 
 ## Agent Architecture
+
+This diagram illustrates the complete workflow of the AI Pricing Research Consultant, showing how data flows through various specialized agents to deliver comprehensive pricing recommendations.
+
+The architecture follows a modular design with clear separation of concerns:
+- Data ingestion and storage layers
+- Specialized AI agents for different analysis phases
+- Orchestration layer coordinating the workflow
+- Multiple AI model integrations for optimal performance
+
+Each agent is designed to handle specific aspects of pricing analysis, from initial product offering assessment to experimental recommendation generation.
 
 ```mermaid
 ---
@@ -47,100 +84,51 @@ flowchart TD
     style DB4 fill:#e8f5e8
 ```
 
+### Key Architecture Components
+
+**Data Layer**: MongoDB serves as the central data repository with structured collections for products, customer segments, pricing models, and analysis results.
+
+**AI Integration Layer**: Multiple AI models are strategically used - GPT-5 for complex reasoning, o3-deep-research for comprehensive analysis.
+
+**Agent Orchestration**: The orchestrator coordinates the sequential execution of specialized agents, ensuring data flows correctly between analysis phases.
+
+**CLI Interface**: Simple command-line interface provides easy access to all functionality while maintaining the sophisticated AI processing underneath.
+
 ## How to use it?
 
 ### Prerequisites
 
-Before running this pricing research consultant, you'll need to set up the following:
-
-#### 1. OpenAI Credentials
-Set your OpenAI API key as an environment variable:
 ```bash
-export OPENAI_API_KEY="your-openai-api-key-here"
-```
-
-This is required for the main GPT-5 model used throughout the research pipeline.
-
-#### 2. LiteLLM Client for Together AI
-The system uses LiteLLM with Together AI for structured parsing. You'll need to configure the Together AI API:
-
-**Option A: Environment Variables**
-```bash
-export TOGETHER_API_KEY="your-together-ai-api-key-here"
-```
-
-**Option B: LiteLLM Configuration**
-Create a `.env` file or set the following environment variables:
-```bash
-export LITELLM_API_KEY="your-together-ai-api-key-here"
-export LITELLM_MODEL="together_ai/moonshotai/Kimi-K2-Instruct"
-```
-
-The system uses the `together_ai/moonshotai/Kimi-K2-Instruct` model for structured data parsing and validation.
-
-#### 3. MongoDB Setup
-The system requires MongoDB for data persistence. You have several options:
-
-**Option A: Local MongoDB**
-1. Install MongoDB locally
-2. Start MongoDB service:
-```bash
-# On macOS with Homebrew
-brew services start mongodb/brew/mongodb-community
-
-# On Ubuntu/Debian
-sudo systemctl start mongod
-```
-
-**Option B: MongoDB Atlas (Cloud)**
-1. Create a MongoDB Atlas account at https://cloud.mongodb.com
-2. Create a cluster and get your connection string
-3. Set the connection string as an environment variable:
-```bash
-export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/pricing-research?retryWrites=true&w=majority"
-```
-
-**Option C: Docker**
-```bash
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-```
-
-**Default Configuration:**
-If no `MONGODB_URI` is set, the system defaults to:
-```
-mongodb://localhost:27017/pricing-research
-```
-
-#### 4. Python Dependencies
-Install the required packages:
-```bash
+# Install dependencies
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+
+# Set API keys
+export OPENAI_API_KEY="your-openai-api-key"
+export TOGETHER_API_KEY="your-together-ai-api-key"
+
+# Optional: Set MongoDB connection
+export MONGODB_URI="mongodb://localhost:27017/pricing-research"  # or your Atlas URI
 ```
 
-### Running the Application
+**MongoDB Options:**
+- **Local**: Install MongoDB and run `mongod`
+- **Cloud**: Use MongoDB Atlas and set `MONGODB_URI`
+- **Docker**: `docker run -d -p 27017:27017 mongo:latest`
 
-Once all prerequisites are configured, you can run the pricing research consultant:
+### Usage
 
 ```bash
 # Create data from JSON/CSV
 python main.py --create path/to/your/data.json
 
-# Run the full orchestrator pipeline
+# Run pricing analysis
 python main.py --orchestrator product_id
 
-# List existing data
+# List data
 python main.py --list collection_name
 
 # Delete data
 python main.py --delete collection_name document_id
-```
-
-### Environment Variables Summary
-```bash
-# Required
-export OPENAI_API_KEY="your-key"
-export TOGETHER_API_KEY="your-key"  # or LITELLM_API_KEY
-
-# Optional
-export MONGODB_URI="your-mongodb-connection-string"
 ```

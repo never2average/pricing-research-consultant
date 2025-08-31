@@ -40,7 +40,14 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
         {
             "role": "user",
             "content": value_capture_analysis
-        }]
+        }],
+        tools=[
+            {"type": "code_interpreter", "container": {"type": "auto"}}
+        ],
+        tool_choice="auto",
+        truncation="auto",
+        temperature=0.1,
+        max_tool_calls=15
     )
     
     pricing_response = litellm_client.chat.completions.create(

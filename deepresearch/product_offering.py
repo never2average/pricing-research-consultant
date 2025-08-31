@@ -3,20 +3,25 @@ from utils.openai_client import openai_client
 from .prompts import product_deep_research_prompt
 
 
-# it needs to get components of the product deployment and needs to differntiate between fixed usage components and variable usage components
+
 def agent(product_id=None, usage_scope=""):
     product = Product.objects.get(id=product_id)
-    input_data = product_deep_research_prompt.format(
-        product_name=product.name,
-        features=product.features_description_summary,
-        icp_description=product.icp_description,
-    )
-    
+    input_data = f"""
+## Product
+{product.name}
+
+## Core Features
+{product.features_description_summary}
+
+## Ideal Customer Profile
+{product.icp_description}
+"""
     if usage_scope:
-        input_data += "\n\nThe current scope of our research is:\n" + usage_scope
+        input_data = f"{input_data}\n\n## Usage Scope:\n{usage_scope}"
     
     response = openai_client.responses.create(
         model="o3-deep-research",
+        instructions=product_deep_research_prompt,
         input=input_data,
         tools=[
             {"type": "web_search_preview"},
@@ -31,6 +36,10 @@ def agent(product_id=None, usage_scope=""):
                 "container": {"type": "auto"}
             },
         ],
+        tool_choice="auto",
+        truncation="auto",
+        temperature=0.1,
+        max_tool_calls=10
     )
     
     return response.output_text

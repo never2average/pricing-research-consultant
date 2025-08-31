@@ -146,10 +146,10 @@ class PricingPlanSegmentContribution(Document):
     product = ReferenceField(Product)
     customer_segment = ReferenceField(CustomerSegment)
     pricing_plan = ReferenceField(ProductPricingModel)
-    number_of_active_subscriptions = IntField()
-    number_of_active_subscriptions_forecast = IntField()
     revenue_ts_data = EmbeddedDocumentListField(TimeseriesData)
+    active_subscriptions = EmbeddedDocumentListField(TimeseriesData)
     revenue_forecast_ts_data = EmbeddedDocumentListField(TimeseriesData)
+    active_subscriptions_forecast = EmbeddedDocumentListField(TimeseriesData)
 
 class CustomerUsageAnalysis(Document):
     product = ReferenceField(Product)
