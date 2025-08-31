@@ -1,6 +1,6 @@
 from utils.openai_client import openai_client, litellm_client
 from pydantic import BaseModel, Field, Optional, List
-from .prompts import experimental_pricing_recommendation_prompt, parse_into_schema_prompt
+from .prompts import experimental_pricing_recommendation_prompt, structured_parsing_system_prompt
 from datetime import datetime
 from datastore.models import Product, ProductPricingModel, CustomerSegment, RecommendedPricingModel, TimeseriesData
 
@@ -45,12 +45,12 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
     )
     
     pricing_response = litellm_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="together_ai/moonshotai/Kimi-K2-Instruct",
         messages=[
-            {"role": "system", "content": parse_into_schema_prompt},
+            {"role": "system", "content": structured_parsing_system_prompt},
             {"role": "user", "content": new_ab_test_pricing_model.output_text}
         ],
-        response_format=RecommendedPricingModelResponse
+        response_model=RecommendedPricingModelResponse
     )
     
     pricing_model = ProductPricingModel(

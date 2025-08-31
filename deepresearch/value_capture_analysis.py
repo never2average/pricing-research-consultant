@@ -2,8 +2,6 @@ from utils.openai_client import openai_client, litellm_client
 from .prompts import rabbithole_think_prompt, value_capture_analysis_prompt
  
 
-
-
 tools = [
     {
         "type": "function",

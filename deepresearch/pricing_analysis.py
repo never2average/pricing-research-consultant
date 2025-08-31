@@ -2,9 +2,7 @@ from utils.openai_client import openai_client, litellm_client
 from pydantic import BaseModel, Field, Optional, List
 from datetime import datetime
 from datastore.models import Product, CustomerSegment, ProductPricingModel, PricingPlanSegmentContribution, TimeseriesData
-from .prompts import pricing_analysis_system_prompt, pricing_analysis_parse_prompt
-
-
+from .prompts import pricing_analysis_system_prompt, structured_parsing_system_prompt
 
 
 class RevenuePoint(BaseModel):
@@ -65,12 +63,12 @@ Return only fields required by the schema.
     )
     
     parsed = litellm_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="together_ai/moonshotai/Kimi-K2-Instruct",
         messages=[
-            {"role": "system", "content": pricing_analysis_parse_prompt},
+            {"role": "system", "content": structured_parsing_system_prompt},
             {"role": "user", "content": draft.output_text}
         ],
-        response_format=PricingAnalysisResponse
+        response_model=PricingAnalysisResponse
     )
     
     created_ids = []
