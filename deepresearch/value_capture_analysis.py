@@ -23,7 +23,7 @@ tools = [
 def go_down_rabbithole(hypothesis: str):
     thoughts = openai_client.responses.create(
         model="gpt-5",
-        instruction=rabbithole_think_prompt,
+        instructions=rabbithole_think_prompt,
         input=hypothesis,
         reasoning={"effort": "high"}
     )
@@ -32,7 +32,7 @@ def go_down_rabbithole(hypothesis: str):
 def agent(segment_roi_analysis, pricing_analysis, product_research):
     thoughts = openai_client.responses.create(
         model="gpt-5",
-        instruction=value_capture_analysis_prompt,
+        instructions=value_capture_analysis_prompt,
         input=f"## Product Research Context\n{product_research}\n\n----------------------------------\n\n## Segment-wise ROI analysis for customer\n{segment_roi_analysis}\n\n----------------------------------\n\n## Pricing Analysis Report\n{pricing_analysis}",
         reasoning={"effort": "high", "summary": "detailed"},
         truncation="auto",

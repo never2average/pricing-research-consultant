@@ -7,6 +7,7 @@ from deepresearch.value_capture_analysis import agent as value_capture_analysis_
 from deepresearch.experimental_pricing_recommendation import agent as experimental_pricing_recommendation_agent
 from concurrent.futures import ThreadPoolExecutor
 from datastore.models import OrchestrationResult
+from tqdm import tqdm
 
 
 def save_orchestration_step(invocation_id, step_name, step_order, product_id, step_input, step_output):
@@ -52,17 +53,21 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
     invocation_id = str(uuid.uuid4())
     print(f"Starting orchestration with invocation ID: {invocation_id}")
 
+    # Initialize progress bar for 4 main steps
+    progress = tqdm(total=4, desc="Orchestration Progress", unit="step")
+
     # Step 1: Run product offering agent (must be first)
-    print("Step 1: Running product offering agent...")
+    progress.set_description("Step 1: Product offering analysis")
     product_offering_input = {
         "product_id": product_id,
         "usage_scope": usage_scope
     }
     product_research = product_offering_agent(product_id, usage_scope)
     save_orchestration_step(invocation_id, "product_offering", 1, product_id, product_offering_input, product_research)
+    progress.update(1)
 
     # Step 2: Run segmentwise ROI and pricing analysis in parallel
-    print("Step 2: Running segmentwise ROI and pricing analysis in parallel...")
+    progress.set_description("Step 2: Segmentwise ROI & pricing analysis (parallel)")
 
     def run_segment_roi():
         segment_roi_input = {
@@ -90,8 +95,10 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
         segment_research = segment_future.result()
         pricing_research = pricing_future.result()
 
+    progress.update(1)
+
     # Step 3: Run remaining agents sequentially
-    print("Step 3: Running value capture analysis...")
+    progress.set_description("Step 3: Value capture analysis")
     value_capture_input = {
         "segment_research": segment_research,
         "pricing_research": pricing_research,
@@ -99,14 +106,16 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
     }
     value_capture_research = value_capture_analysis_agent(segment_research, pricing_research, product_research)
     save_orchestration_step(invocation_id, "value_capture_analysis", 4, product_id, value_capture_input, value_capture_research)
+    progress.update(1)
 
-    print("Step 4: Running experimental pricing recommendation...")
+    progress.set_description("Step 4: Experimental pricing recommendation")
     experimental_pricing_input = {
         "product_id": product_id,
         "value_capture_research": value_capture_research
     }
     experimental_pricing_research = experimental_pricing_recommendation_agent(product_id, value_capture_research)
     save_orchestration_step(invocation_id, "experimental_pricing_recommendation", 5, product_id, experimental_pricing_input, experimental_pricing_research)
+    progress.update(1)
 
     pr = None
     try:
@@ -173,6 +182,8 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
             except Exception:
                 pass
 
+    progress.set_description("Orchestration completed!")
+    progress.close()
     print(f"Orchestration completed. Invocation ID: {invocation_id}")
     return invocation_id
     

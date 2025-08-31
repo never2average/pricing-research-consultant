@@ -14,8 +14,9 @@ from datastore.connectors import (
     list_one_markdown,
     list_all_markdown,
 )
+from dotenv import load_dotenv
 
-
+load_dotenv()
 connect_db()
 
 
@@ -27,22 +28,136 @@ def process_csv_file(path):
     return create_from_csv_file(path)
 
 
+def print_creation_results(product, pricing_models, segments):
+    """Print beautified creation results"""
+    print("\n" + "="*60)
+    print("🎉 CREATION SUCCESSFUL")
+    print("="*60)
+
+    print(f"\n📦 Product Created:")
+    print(f"   ID: {product.id}")
+    print(f"   Name: {product.name}")
+
+    print(f"\n💰 Pricing Models Created:")
+    if isinstance(pricing_models, list):
+        for i, model in enumerate(pricing_models, 1):
+            print(f"   {i}. ID: {model.id}")
+            print(f"      Plan: {model.plan_name}")
+            print(f"      Price: ${model.unit_price}")
+    else:
+        print(f"   ID: {pricing_models.id}")
+        print(f"   Plan: {pricing_models.plan_name}")
+        print(f"   Price: ${pricing_models.unit_price}")
+
+    print(f"\n👥 Customer Segments Created:")
+    for i, segment in enumerate(segments, 1):
+        print(f"   {i}. ID: {segment.id}")
+        print(f"      Name: {segment.customer_segment_name}")
+        print(f"      UID: {segment.customer_segment_uid}")
+
+    print("\n" + "="*60)
+    print(f"✅ Total: 1 Product, {len(pricing_models) if isinstance(pricing_models, list) else 1} Pricing Model(s), {len(segments)} Segment(s)")
+    print("="*60 + "\n")
+
+
 def build_parser():
-    parser = argparse.ArgumentParser(prog="pricing-cli")
+    description = """
+Pricing Research Consultant CLI Tool
+
+A comprehensive tool for managing products, pricing models, and customer segments,
+with advanced pricing analysis and recommendation capabilities.
+
+Examples:
+  # Create from JSON file
+  python main.py --create --json product_data.json
+  
+  # Create from CSV file  
+  python main.py --create --csv data.csv
+  
+  # Run pricing analysis
+  python main.py --orchestrator --product-id PROD123 --use-case "SaaS optimization"
+  
+  # List all products
+  python main.py --listall products
+  
+  # View specific pricing model
+  python main.py --list pricing_models MODEL456
+  
+  # Delete a customer segment
+  python main.py --delete customer_segments SEG789
+    """
+    
+    parser = argparse.ArgumentParser(
+        prog="pricing-cli",
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    # Main operation modes
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--create", action="store_true")
-    mode.add_argument("--orchestrator", action="store_true")
-    mode.add_argument("--delete", nargs=2, metavar=("collection", "id"))
-    mode.add_argument("--deletemany", nargs=2, metavar=("collection", "ids"))
-    mode.add_argument("--list", dest="list_one", nargs=2, metavar=("collection", "id"))
-    mode.add_argument("--listall", nargs=1, metavar=("collection",))
+    mode.add_argument(
+        "--create", 
+        action="store_true",
+        help="Create new products, pricing models, and segments from input data"
+    )
+    mode.add_argument(
+        "--orchestrator", 
+        action="store_true",
+        help="Run comprehensive pricing analysis and generate recommendations"
+    )
+    mode.add_argument(
+        "--delete", 
+        nargs=2, 
+        metavar=("collection", "id"),
+        help="Delete a single document from specified collection (products, pricing_models, customer_segments)"
+    )
+    mode.add_argument(
+        "--deletemany", 
+        nargs=2, 
+        metavar=("collection", "ids"),
+        help="Delete multiple documents from collection (comma-separated IDs)"
+    )
+    mode.add_argument(
+        "--list", 
+        dest="list_one", 
+        nargs=2, 
+        metavar=("collection", "id"),
+        help="Display detailed information about a specific document"
+    )
+    mode.add_argument(
+        "--listall", 
+        nargs=1, 
+        metavar=("collection",),
+        help="List all documents in the specified collection"
+    )
 
+    # Input/Output options
     io_group = parser.add_mutually_exclusive_group(required=False)
-    io_group.add_argument("--json", dest="input_json")
-    io_group.add_argument("--csv", dest="input_csv")
+    io_group.add_argument(
+        "--json", 
+        dest="input_json",
+        metavar="FILE",
+        help="Input JSON file path (required with --create)"
+    )
+    io_group.add_argument(
+        "--csv", 
+        dest="input_csv",
+        metavar="FILE", 
+        help="Input CSV file path (required with --create)"
+    )
 
-    parser.add_argument("--product-id")
-    parser.add_argument("--use-case")
+    # Additional parameters
+    parser.add_argument(
+        "--product-id",
+        metavar="ID",
+        help="Product ID for orchestrator analysis (required with --orchestrator)"
+    )
+    parser.add_argument(
+        "--use-case",
+        metavar="DESCRIPTION",
+        help="Optional use case description for targeted analysis"
+    )
+    
     return parser
 
 
@@ -56,14 +171,11 @@ if args.create:
         parser.error("--json or --csv is required with --create")
 
     if args.input_json:
-        product, pricing_model, segments = process_json_file(args.input_json)
+        product, pricing_models, segments = process_json_file(args.input_json)
     else:
-        product, pricing_model, segments = process_csv_file(args.input_csv)
+        product, pricing_models, segments = process_csv_file(args.input_csv)
 
-    print("Created:")
-    print(f"- Product: {str(product.id)}")
-    print(f"- ProductPricingModel: {str(pricing_model.id)}")
-    print(f"- CustomerSegments: {[str(s.id) for s in segments]}")
+    print_creation_results(product, pricing_models, segments)
 
 elif args.orchestrator:
     if not args.product_id:

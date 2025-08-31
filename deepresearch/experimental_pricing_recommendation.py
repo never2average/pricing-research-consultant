@@ -52,7 +52,7 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
     )
     
     pricing_response = litellm_client.chat.completions.create(
-        model="together_ai/moonshotai/Kimi-K2-Instruct",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": structured_parsing_system_prompt},
             {"role": "user", "content": new_ab_test_pricing_model.output_text}

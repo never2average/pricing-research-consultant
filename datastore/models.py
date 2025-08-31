@@ -1,9 +1,10 @@
-from mongoengine import Document, EmbeddedDocument, StringField, FloatField, IntField, ListField, URLField, ReferenceField, DateTimeField, DictField, EmbeddedDocumentListField
 from datetime import datetime
 import os
 import tempfile
 import requests
 from utils.openai_client import openai_client
+from mongoengine import ReferenceField, DateTimeField, DynamicField, EmbeddedDocumentListField
+from mongoengine import Document, EmbeddedDocument, StringField, FloatField, IntField, ListField, URLField
 
 class Product(Document):
     name = StringField()
@@ -14,35 +15,89 @@ class Product(Document):
     vector_store_id = StringField()
     
     def save(self, *args, **kwargs):
+        # Validate doc_urls for new products
+        if self.id is None and self.product_documentations:
+            self._validate_and_clean_doc_urls()
+
         # Check if this is a new document or if product_documentations changed
         is_new = self.id is None
         original_docs = []
-        
+
         if not is_new:
             try:
                 original_product = Product.objects.get(id=self.id)
                 original_docs = original_product.product_documentations
             except Product.DoesNotExist:
                 pass
-        
+
         # Save the document first
         super().save(*args, **kwargs)
-        
+
         # Check if we need to create vector store
         should_create_vector_store = False
-        
+
         if is_new and self.product_documentations:
             should_create_vector_store = True
         elif not is_new and self.product_documentations:
             if set(self.product_documentations) != set(original_docs):
                 should_create_vector_store = True
-        
+
         if should_create_vector_store:
             try:
                 self.create_vector_store_for_product()
             except Exception as e:
                 print(f"Error creating vector store for product {self.name}: {e}")
-    
+
+    def _validate_and_clean_doc_urls(self):
+        """Validate and clean documentation URLs for new products"""
+        if not self.product_documentations:
+            return
+
+        from urllib.parse import urlparse
+        import re
+
+        cleaned_urls = []
+        for url in self.product_documentations:
+            if not isinstance(url, str):
+                print(f"Warning: Invalid doc URL type {type(url)}, skipping: {url}")
+                continue
+
+            url = url.strip()
+            if not url:
+                continue
+
+            # Basic URL validation
+            try:
+                parsed = urlparse(url)
+                if not parsed.scheme or not parsed.netloc:
+                    # Try to add https:// if missing scheme
+                    if not parsed.scheme and parsed.path:
+                        url = f"https://{url}"
+                        parsed = urlparse(url)
+                        if not parsed.scheme or not parsed.netloc:
+                            print(f"Warning: Invalid URL format, skipping: {url}")
+                            continue
+                    else:
+                        print(f"Warning: Invalid URL format, skipping: {url}")
+                        continue
+
+                # Additional validation - check for common file extensions or documentation patterns
+                path = parsed.path.lower()
+                if not any(ext in path for ext in ['.pdf', '.doc', '.docx', '.txt', '.md', '.html', '.htm', '/docs', '/documentation', '/help']):
+                    print(f"Warning: URL doesn't appear to be documentation, but adding anyway: {url}")
+
+                cleaned_urls.append(url)
+
+            except Exception as e:
+                print(f"Warning: Error validating URL {url}: {e}")
+                continue
+
+        self.product_documentations = cleaned_urls
+        if cleaned_urls:
+            print(f"Validated {len(cleaned_urls)} documentation URLs for new product")
+        else:
+            print("Warning: No valid documentation URLs found for new product")
+
     def download_documentation_files(self):
         downloaded_files = []
         
@@ -70,16 +125,16 @@ class Product(Document):
     def create_vector_store_for_product(self):
         if not self.product_documentations:
             return None
-        
-        
+
+
         downloaded_files = self.download_documentation_files()
-        
+
         if not downloaded_files:
             return None
-        
+
         try:
             file_ids = []
-            
+
             for file_path in downloaded_files:
                 with open(file_path, 'rb') as file:
                     uploaded_file = openai_client.files.create(
@@ -87,33 +142,39 @@ class Product(Document):
                         purpose="assistants"
                     )
                     file_ids.append(uploaded_file.id)
-            
+
             vector_store_name = f"{self.name}_documentation_store"
             metadata = {
                 "product_id": str(self.id),
                 "product_name": self.name,
                 "created_by": "auto_update_hook"
             }
-            deleted_vector_store = openai_client.vector_stores.delete(
-                vector_store_id=self.vector_store_id
-            )
-            print(deleted_vector_store)
-            
+
+            # Only delete existing vector store if this is not a new product
+            if self.vector_store_id:
+                try:
+                    deleted_vector_store = openai_client.vector_stores.delete(
+                        vector_store_id=self.vector_store_id
+                    )
+                    print(f"Deleted existing vector store: {deleted_vector_store}")
+                except Exception as e:
+                    print(f"Error deleting existing vector store: {e}")
+
             vector_store = openai_client.vector_stores.create(
                 name=vector_store_name,
                 file_ids=file_ids,
                 metadata=metadata
             )
-            
+
             self.vector_store_id = vector_store.id
             self.save()
-            
+
             return vector_store.id
-            
+
         except Exception as e:
             print(f"Error creating vector store: {e}")
             return None
-            
+
         finally:
             for file_path in downloaded_files:
                 try:
@@ -177,8 +238,8 @@ class OrchestrationResult(Document):
     step_name = StringField(required=True)
     step_order = IntField(required=True)
     product_id = StringField()
-    step_input = DictField()
-    step_output = DictField()
+    step_input = DynamicField()
+    step_output = DynamicField()
     created_at = DateTimeField(default=datetime.utcnow)
 
     meta = {
