@@ -38,7 +38,6 @@ def agent(product_id=None, usage_scope=""):
         ],
         tool_choice="auto",
         truncation="auto",
-        temperature=0.1,
         max_tool_calls=10
     )
     

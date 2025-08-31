@@ -3,7 +3,7 @@ import csv
 import json
 from mongoengine import connect
 
-from datastore.models import Product, ProductPricingModel, CustomerSegment, PricingPlanSegmentContribution, CustomerUsageAnalysis
+from datastore.models import Product, ProductPricingModel, CustomerSegment, PricingPlanSegmentContribution, CustomerUsageAnalysis, ProductPricingMapping, OrchestrationResult
 
 
 
@@ -23,9 +23,11 @@ def normalize_collection_name(name):
 MODEL_MAP = {
     "product": Product,
     "productpricingmodel": ProductPricingModel,
+    "productpricingmapping": ProductPricingMapping,
     "pricingplansegmentcontribution": PricingPlanSegmentContribution,
     "customersegment": CustomerSegment,
     "customerusageanalysis": CustomerUsageAnalysis,
+    "orchestrationresult": OrchestrationResult,
 }
 
 
@@ -69,6 +71,7 @@ def create_product_from_dict(d):
 
 def create_pricing_model_from_dict(d):
     pricing_model = ProductPricingModel(
+        plan_name=d.get("plan_name", ""),
         unit_price=float(d.get("unit_price", 99.0)),
         min_unit_count=int(d.get("min_unit_count", 1)),
         unit_calculation_logic=d.get("unit_calculation_logic", "per_seat"),
@@ -102,29 +105,62 @@ def create_customer_usage_analysis_from_dict(product, segment, d):
     return usage
 
 
+def create_product_pricing_mapping(product, pricing_model, is_active="true"):
+    mapping = ProductPricingMapping(
+        product=product,
+        pricing_model=pricing_model,
+        is_active=is_active,
+    )
+    mapping.save()
+    return mapping
+
+
 def create_from_json_file(path):
     with open(path, "r") as f:
         payload = json.load(f)
 
     product_data = payload.get("product", {})
-    pricing_model_data = payload.get("pricing_model", {})
+    pricing_models_data = payload.get("pricing_models", [])
     customer_segments = payload.get("customer_segments", [])
 
     if not product_data or not product_data.get("name"):
         raise ValueError("product.name is required in JSON payload")
 
+    if not pricing_models_data:
+        raise ValueError("pricing_models array is required in JSON payload")
+
     product = create_product_from_dict(product_data)
-    pricing_model = create_pricing_model_from_dict(pricing_model_data)
+
+    created_pricing_models = []
+    pricing_model_map = {}
+    for pricing_data in pricing_models_data:
+        pricing_model = create_pricing_model_from_dict(pricing_data)
+        pricing_model_id = str(pricing_model.id)
+        pricing_model_map[pricing_model_id] = pricing_model
+        created_pricing_models.append(pricing_model)
+
+        # Create product-pricing mapping
+        create_product_pricing_mapping(product, pricing_model)
 
     created_segments = []
     for seg in customer_segments:
         segment = create_customer_segment_from_dict(product, seg)
-        create_pricing_plan_segment_contribution(product, segment, pricing_model, seg)
+
+        pricing_model_indices = seg.get("pricing_model_ids", [])
+        if not pricing_model_indices:
+            pricing_model_indices = list(range(len(created_pricing_models)))
+
+        for index in pricing_model_indices:
+            if isinstance(index, int) and 0 <= index < len(created_pricing_models):
+                create_pricing_plan_segment_contribution(product, segment, created_pricing_models[index], seg)
+            elif isinstance(index, str) and index in pricing_model_map:
+                create_pricing_plan_segment_contribution(product, segment, pricing_model_map[index], seg)
+
         for usage in seg.get("usage_analyses", []) or []:
             create_customer_usage_analysis_from_dict(product, segment, usage)
         created_segments.append(segment)
 
-    return product, pricing_model, created_segments
+    return product, created_pricing_models, created_segments
 
 
 def create_from_csv_file(path):
@@ -152,11 +188,14 @@ def create_from_csv_file(path):
 
             if pricing_model is None:
                 pricing_model = create_pricing_model_from_dict({
+                    "plan_name": row.get("plan_name", ""),
                     "unit_price": row.get("unit_price", 99.0),
                     "min_unit_count": row.get("min_unit_count", 1),
                     "unit_calculation_logic": row.get("unit_calculation_logic", "per_seat"),
                     "min_unit_utilization_period": row.get("min_unit_utilization_period", "monthly"),
                 })
+                # Create product-pricing mapping
+                create_product_pricing_mapping(product, pricing_model)
 
             uid = row.get("customer_segment_uid")
             if not uid:

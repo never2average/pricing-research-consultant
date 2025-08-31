@@ -1,6 +1,7 @@
 from bson import ObjectId
 from datetime import datetime
-from pydantic import BaseModel, Field, Optional, List
+from typing import Optional, List
+from pydantic import BaseModel, Field
 from utils.openai_client import openai_client, litellm_client
 from datastore.models import Product, CustomerSegment, ProductPricingModel
 from datastore.models import PricingPlanSegmentContribution, TimeseriesData
@@ -44,7 +45,7 @@ def agent(product_id: str, segment_ids: List[str]=None):
 
     for plan_contribution in all_segment_pricing_plans:
         segment_name = plan_contribution.customer_segment.customer_segment_name
-        plan_name = plan_contribution.pricing_plan.unit_calculation_logic or f"Plan {str(plan_contribution.pricing_plan.id)}"
+        plan_name = plan_contribution.pricing_plan.plan_name or plan_contribution.pricing_plan.unit_calculation_logic or f"Plan {str(plan_contribution.pricing_plan.id)}"
 
         # Get latest revenue and subscriptions data
         current_revenue = plan_contribution.revenue_ts_data[-1].value if plan_contribution.revenue_ts_data else 0
@@ -72,7 +73,6 @@ def agent(product_id: str, segment_ids: List[str]=None):
     draft = openai_client.responses.create(
         model="gpt-5",
         reasoning={"effort": "low"},
-        temperature=0.1,
         truncation="auto",
         tool_choice="auto",
         max_tool_calls=10,
@@ -101,8 +101,7 @@ def agent(product_id: str, segment_ids: List[str]=None):
             {"role": "system", "content": structured_parsing_system_prompt},
             {"role": "user", "content": draft.output_text}
         ],
-        response_model=PricingAnalysisResponse,
-        temperature=0.0
+        response_model=PricingAnalysisResponse
     )
 
     return draft.output_text

@@ -4,4 +4,3 @@ instructor>=1.0.0
 mongoengine>=0.24.0
 pydantic>=2.0.0
 requests>=2.31.0
-bson>=0.5.10

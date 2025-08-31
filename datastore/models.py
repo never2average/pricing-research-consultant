@@ -11,7 +11,7 @@ class Product(Document):
     unit_level_cogs = StringField()
     features_description_summary = StringField()
     product_documentations = ListField(URLField())
-    vector_store_ids = StringField()
+    vector_store_id = StringField()
     
     def save(self, *args, **kwargs):
         # Check if this is a new document or if product_documentations changed
@@ -122,11 +122,18 @@ class Product(Document):
                     pass
 
 class ProductPricingModel(Document):
+    plan_name = StringField()
     unit_price = FloatField()
     min_unit_count = IntField()
     unit_calculation_logic = StringField()
     min_unit_utilization_period = StringField()
-    
+
+class ProductPricingMapping(Document):
+    product = ReferenceField(Product)
+    pricing_model = ReferenceField(ProductPricingModel)
+    is_active = StringField(default="true")
+    created_at = DateTimeField(default=datetime.utcnow)
+
 class PricingModelAIGapDiagnosis(Document):
     pricing_model = ReferenceField(ProductPricingModel)
     ai_gap_diagnosis_summary = StringField()
@@ -164,3 +171,19 @@ class RecommendedPricingModel(Document):
     customer_segment = ReferenceField(CustomerSegment)
     pricing_plan = ReferenceField(ProductPricingModel)
     new_revenue_forecast_ts_data = EmbeddedDocumentListField(TimeseriesData)
+
+class OrchestrationResult(Document):
+    invocation_id = StringField(required=True)
+    step_name = StringField(required=True)
+    step_order = IntField(required=True)
+    product_id = StringField()
+    step_input = DictField()
+    step_output = DictField()
+    created_at = DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        'indexes': [
+            'invocation_id',
+            ('invocation_id', 'step_order'),
+        ]
+    }

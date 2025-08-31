@@ -1,9 +1,8 @@
-from utils.openai_client import openai_client, litellm_client
-from datastore.models import Product, CustomerSegment, ProductPricingModel, CustomerUsageAnalysis, PricingPlanSegmentContribution
+import random
 from .prompts import roi_prompt
 from bson.objectid import ObjectId
-import random
-from datetime import datetime, timedelta
+from utils.openai_client import openai_client
+from datastore.models import CustomerSegment, CustomerUsageAnalysis, PricingPlanSegmentContribution
 
 
 def format_segments_table(segments):
@@ -120,18 +119,19 @@ def format_cost_revenue_table(segment_data):
     if not segment_data:
         return "No cost/revenue data available."
 
-    table = "| Segment | Total Revenue | Subscriptions | Avg Revenue/User | Unit Price | Min Units |\n"
-    table += "|---------|---------------|---------------|-----------------|------------|-----------|\n"
+    table = "| Segment | Plan | Total Revenue | Subscriptions | Avg Revenue/User | Unit Price | Min Units |\n"
+    table += "|---------|------|---------------|---------------|-----------------|------------|-----------|\n"
 
     for segment_uid, data in segment_data.items():
         segment_name = data['segment_name'] or "N/A"
+        plan_name = data['pricing_plan'].plan_name if data['pricing_plan'] and data['pricing_plan'].plan_name else "N/A"
         total_revenue = data['total_revenue']
         total_subs = data['total_subscriptions']
         avg_revenue = total_revenue / total_subs if total_subs > 0 else 0
         unit_price = data['unit_price']
         min_units = data['min_unit_count']
 
-        table += f"| {segment_name} | ${total_revenue:,.2f} | {int(total_subs)} | ${avg_revenue:,.2f} | ${unit_price:,.2f} | {min_units} |\n"
+        table += f"| {segment_name} | {plan_name} | ${total_revenue:,.2f} | {int(total_subs)} | ${avg_revenue:,.2f} | ${unit_price:,.2f} | {min_units} |\n"
 
     return table
 
@@ -179,7 +179,6 @@ def agent(product_id, product_research):
         instruction=roi_prompt,
         input=input_text,
         reasoning={"effort": "high"},
-        temperature=0.1,
         truncation="auto",
         tools=[
             {"type": "code_interpreter", "container": {"type": "auto"}}

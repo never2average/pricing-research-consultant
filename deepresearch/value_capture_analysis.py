@@ -36,7 +36,6 @@ def agent(segment_roi_analysis, pricing_analysis, product_research):
         input=f"## Product Research Context\n{product_research}\n\n----------------------------------\n\n## Segment-wise ROI analysis for customer\n{segment_roi_analysis}\n\n----------------------------------\n\n## Pricing Analysis Report\n{pricing_analysis}",
         reasoning={"effort": "high", "summary": "detailed"},
         truncation="auto",
-        temperature=0.2,
         tools=[
             {
                 "type": "code_interpreter",

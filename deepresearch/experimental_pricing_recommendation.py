@@ -1,5 +1,6 @@
 from utils.openai_client import openai_client, litellm_client
-from pydantic import BaseModel, Field, Optional, List
+from typing import Optional, List
+from pydantic import BaseModel, Field
 from .prompts import experimental_pricing_recommendation_prompt, structured_parsing_system_prompt
 from datetime import datetime
 from datastore.models import Product, ProductPricingModel, CustomerSegment, RecommendedPricingModel, TimeseriesData
@@ -22,6 +23,7 @@ class RecommendedCustomerSegmentModel(BaseModel):
 
 class RecommendedPricingModelResponse(BaseModel):
     recommended_customer_segment: List[RecommendedCustomerSegmentModel]
+    plan_name: str = Field(default="Recommended Plan")
     unit_price: float
     min_unit_count: int
     unit_calculation_logic: str
@@ -46,7 +48,6 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
         ],
         tool_choice="auto",
         truncation="auto",
-        temperature=0.1,
         max_tool_calls=15
     )
     
@@ -60,6 +61,7 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
     )
     
     pricing_model = ProductPricingModel(
+        plan_name=pricing_response.plan_name,
         unit_price=pricing_response.unit_price,
         min_unit_count=pricing_response.min_unit_count,
         unit_calculation_logic=pricing_response.unit_calculation_logic,
