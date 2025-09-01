@@ -3,7 +3,7 @@ import csv
 import json
 from mongoengine import connect
 
-from datastore.models import Product, ProductPricingModel, CustomerSegment, PricingPlanSegmentContribution, CustomerUsageAnalysis, ProductPricingMapping, OrchestrationResult
+from datastore.models import Product, ProductPricingModel, CustomerSegment, PricingPlanSegmentContribution, CustomerUsageAnalysis, ProductPricingMapping, OrchestrationResult, Competitors
 
 
 
@@ -58,12 +58,28 @@ def create_pricing_plan_segment_contribution(product, segment, pricing_model, d=
 
 
 def create_product_from_dict(d):
+    competitors_data = d.get("competitors", []) or []
+    competitors_list = []
+    for c in competitors_data:
+        try:
+            if not isinstance(c, dict):
+                continue
+            comp = Competitors(
+                competitor_name=c.get("competitor_name"),
+                website_url=c.get("website_url"),
+                product_description=c.get("product_description", ""),
+            )
+            competitors_list.append(comp)
+        except Exception:
+            continue
+
     product = Product(
         name=d.get("name"),
         icp_description=d.get("icp_description", ""),
         unit_level_cogs=d.get("unit_level_cogs", ""),
         features_description_summary=d.get("features_description_summary", ""),
         product_documentations=d.get("product_documentations", []) or [],
+        competitors=competitors_list,
     )
     product.save()
     return product

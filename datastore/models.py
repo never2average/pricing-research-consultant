@@ -6,11 +6,17 @@ from utils.openai_client import openai_client
 from mongoengine import ReferenceField, DateTimeField, DynamicField, EmbeddedDocumentListField
 from mongoengine import Document, EmbeddedDocument, StringField, FloatField, IntField, ListField, URLField
 
+class Competitors(EmbeddedDocument):
+    competitor_name = StringField()
+    website_url = StringField()
+    product_description = StringField()
+
 class Product(Document):
     name = StringField()
     icp_description = StringField()
     unit_level_cogs = StringField()
     features_description_summary = StringField()
+    competitors = EmbeddedDocumentListField(Competitors)
     product_documentations = ListField(URLField())
     vector_store_id = StringField()
     
