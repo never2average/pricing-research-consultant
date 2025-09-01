@@ -53,8 +53,8 @@ flowchart TD
     B -- "--orchestrator" --> D["Orchestrator Flow"]
     B -- "--delete" --> E["Delete Operations"]
     B -- "--list" --> F["List Operations"]
-    C --> C1["JSON/CSV Input"]
-    C1 --> C2["connectors.py<br>create_from_json_file<br>create_from_csv_file"]
+    C --> C1["JSON Input"]
+    C1 --> C2["connectors.py<br>create_from_json_file"]
     C2 --> C3["MongoDB<br>Product, PricingModel,<br>CustomerSegment"]
     D --> D1["orchestrator.py<br>final_agent"]
     D1 --> D2["Product Offering Agent<br>deepresearch/product_offering.py"]
@@ -96,7 +96,7 @@ flowchart TD
 
 ## Data Format Requirements
 
-Before using the pricing consultant, you need to prepare your product, pricing, and customer data in either JSON or CSV format. Both formats support the same underlying data structure.
+Before using the pricing consultant, prepare your product, pricing, and customer data in JSON format.
 
 ### JSON Format
 
@@ -138,35 +138,7 @@ The JSON format organizes data into three main sections: `product`, `pricing_mod
 }
 ```
 
-### CSV Format
-
-The CSV format flattens all data into rows, where each row can represent a customer usage analysis. Product and pricing data are repeated across rows.
-
-**Required Columns:**
-- `product_name` - Product name (required)
-- `icp_description` - Ideal customer profile
-- `unit_level_cogs` - Cost of goods sold
-- `features_description_summary` - Feature summary
-- `product_documentations` - URLs separated by `;` or `,`
-- `unit_price` - Price per unit (numeric)
-- `min_unit_count` - Minimum units (numeric)
-- `unit_calculation_logic` - Pricing logic (e.g., "per_seat", "per_usage")
-- `min_unit_utilization_period` - Billing period (e.g., "monthly", "yearly")
-- `customer_segment_uid` - Unique segment ID (required)
-- `customer_segment_name` - Human-readable segment name
-- `customer_segment_description` - Segment description
-- `number_of_active_subscriptions` - Current active subscriptions (numeric)
-- `number_of_active_subscriptions_forecast` - Forecasted subscriptions (numeric)
-- `customer_uid` - Individual customer ID
-- `customer_task_to_agent` - Task description for the customer
-- `predicted_customer_satisfaction_response` - Satisfaction score (numeric 0-10)
-- `predicted_customer_satisfaction_response_reasoning` - Reasoning for satisfaction score
-
-**Example CSV:**
-```csv
-product_name,icp_description,unit_level_cogs,features_description_summary,product_documentations,unit_price,min_unit_count,unit_calculation_logic,min_unit_utilization_period,customer_segment_uid,customer_segment_name,customer_segment_description,number_of_active_subscriptions,number_of_active_subscriptions_forecast,customer_uid,customer_task_to_agent,predicted_customer_satisfaction_response,predicted_customer_satisfaction_response_reasoning
-AI Assistant Pro,Tech-savvy businesses needing AI automation,$5 per 1000 queries,Advanced NLP with custom training capabilities,https://docs.example.com;https://api.example.com,99.0,1,per_seat,monthly,enterprise,Enterprise Customers,Large organizations with 500+ employees,50,75,customer_001,Automated customer support and FAQ handling,8.5,High satisfaction due to reduced response time and 24/7 availability
-```
+ 
 
 ### Field Descriptions
 
@@ -198,8 +170,8 @@ AI Assistant Pro,Tech-savvy businesses needing AI automation,$5 per 1000 queries
 
 ### Important Notes
 
-- **Required Fields**: Product name is mandatory. For CSV, `customer_segment_uid` is also required.
-- **Multiple Segments**: JSON supports multiple segments in an array. CSV uses one row per customer usage analysis.
+- **Required Fields**: Product name is mandatory.
+- **Multiple Segments**: JSON supports multiple segments in an array.
 - **Documentation URLs**: Product documentation URLs help the AI understand your product better for more accurate pricing recommendations.
 - **Numeric Fields**: Ensure satisfaction scores, pricing, and subscription counts are valid numbers.
 
@@ -229,7 +201,7 @@ export MONGODB_URI="mongodb://localhost:27017/pricing-research"  # or your Atlas
 ### Usage
 
 ```bash
-# Create data from JSON/CSV
+# Create data from JSON
 python main.py --create path/to/your/data.json
 
 # Run pricing analysis

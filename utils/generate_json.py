@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import json
-import csv
 import instructor
 from litellm import completion
 import os
@@ -45,54 +44,17 @@ class ProductData(BaseModel):
     pricing_models: Optional[List[PricingModel]] = Field(default=None)
     customer_segments: Optional[List[CustomerSegment]] = Field(default=None)
 
-
-def read_csv_data():
-    markdown_table = ""
-    with open("workingdata_final.csv", "r", newline="", encoding="utf-8") as csvfile:
-        reader = csv.reader(csvfile)
-        rows = list(reader)
-
-        if not rows:
-            return ""
-
-        # Extract headers and data rows
-        headers = rows[0]
-        data_rows = rows[1:]
-
-        # Create markdown table header
-        markdown_table += "| " + " | ".join(headers) + " |\n"
-        markdown_table += "|" + "|".join(["-" * (len(header) + 2) for header in headers]) + "|\n"
-
-        # Add data rows
-        for row in data_rows:
-            # Ensure row has same number of columns as headers
-            while len(row) < len(headers):
-                row.append("")
-            row = row[:len(headers)]  # Truncate if too many columns
-
-            markdown_table += "| " + " | ".join(row) + " |\n"
-
-    return markdown_table
-
-
-csv_data = read_csv_data()
-
 response = client.chat.completions.create(
     model="gpt-5-2025-08-07",
     api_key=os.getenv("OPENAI_API_KEY"),
     messages=[
         {"role": "system", "content": "Calculate Unit price as (3*per million token input + 1* per million token output)/ 4"},
         {"role": "user", "content": f"""
-Read about all the models offered by OpenAI and format then into a product/pricing/persona JSON.
-The product is OpenAI API platform, and the pricing plans are the different model level pricings.
+Read about all the models offered by OpenAI and format them into a product/pricing/persona JSON.
+The product is OpenAI API platform, and the pricing plans are the different model-level pricings.
 The customer personas are the different types of developers, companies and so on who consume OpenAI APIs.
 
-Treat batch API and regular API as a different pricing plans.
-
-## Model Data:
-
-{csv_data}
-
+Treat batch API and regular API as different pricing plans.
 """}],
     response_model=ProductData
 )

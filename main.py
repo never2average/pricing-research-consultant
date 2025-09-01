@@ -6,7 +6,6 @@ from orchestrator import final_agent
 from datastore.connectors import (
     connect_db,
     create_from_json_file,
-    create_from_csv_file,
     delete_one,
     delete_many,
     get_one,
@@ -23,9 +22,7 @@ connect_db()
 def process_json_file(path):
     return create_from_json_file(path)
 
-
-def process_csv_file(path):
-    return create_from_csv_file(path)
+ 
 
 
 def print_creation_results(product, pricing_models, segments):
@@ -71,8 +68,7 @@ Examples:
   # Create from JSON file
   python main.py --create --json product_data.json
   
-  # Create from CSV file  
-  python main.py --create --csv data.csv
+  
   
   # Run pricing analysis
   python main.py --orchestrator --product-id PROD123 --use-case "SaaS optimization"
@@ -139,12 +135,7 @@ Examples:
         metavar="FILE",
         help="Input JSON file path (required with --create)"
     )
-    io_group.add_argument(
-        "--csv", 
-        dest="input_csv",
-        metavar="FILE", 
-        help="Input CSV file path (required with --create)"
-    )
+    
 
     # Additional parameters
     parser.add_argument(
@@ -167,13 +158,10 @@ parser = build_parser()
 args = parser.parse_args()
 
 if args.create:
-    if not args.input_json and not args.input_csv:
-        parser.error("--json or --csv is required with --create")
+    if not args.input_json:
+        parser.error("--json is required with --create")
 
-    if args.input_json:
-        product, pricing_models, segments = process_json_file(args.input_json)
-    else:
-        product, pricing_models, segments = process_csv_file(args.input_csv)
+    product, pricing_models, segments = process_json_file(args.input_json)
 
     print_creation_results(product, pricing_models, segments)
 

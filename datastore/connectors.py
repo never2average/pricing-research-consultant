@@ -1,5 +1,4 @@
 import os
-import csv
 import json
 from mongoengine import connect
 
@@ -177,72 +176,6 @@ def create_from_json_file(path):
         created_segments.append(segment)
 
     return product, created_pricing_models, created_segments
-
-
-def create_from_csv_file(path):
-    product = None
-    pricing_model = None
-    segment_by_uid = {}
-
-    with open(path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if product is None:
-                docs = row.get("product_documentations", "").strip()
-                docs_list = []
-                if docs:
-                    sep = ";" if ";" in docs else ","
-                    docs_list = [x.strip() for x in docs.split(sep) if x.strip()]
-
-                product = create_product_from_dict({
-                    "name": row.get("product_name"),
-                    "icp_description": row.get("icp_description", ""),
-                    "unit_level_cogs": row.get("unit_level_cogs", ""),
-                    "features_description_summary": row.get("features_description_summary", ""),
-                    "product_documentations": docs_list,
-                })
-
-            if pricing_model is None:
-                pricing_model = create_pricing_model_from_dict({
-                    "plan_name": row.get("plan_name", ""),
-                    "unit_price": row.get("unit_price", 99.0),
-                    "min_unit_count": row.get("min_unit_count", 1),
-                    "unit_calculation_logic": row.get("unit_calculation_logic", "per_seat"),
-                    "min_unit_utilization_period": row.get("min_unit_utilization_period", "monthly"),
-                })
-                # Create product-pricing mapping
-                create_product_pricing_mapping(product, pricing_model)
-
-            uid = row.get("customer_segment_uid")
-            if not uid:
-                raise ValueError("customer_segment_uid is required in CSV")
-
-            if uid not in segment_by_uid:
-                seg_dict = {
-                    "customer_segment_uid": uid,
-                    "customer_segment_name": row.get("customer_segment_name"),
-                    "customer_segment_description": row.get("customer_segment_description", ""),
-                }
-                segment = create_customer_segment_from_dict(product, seg_dict)
-                create_pricing_plan_segment_contribution(product, segment, pricing_model, row)
-                segment_by_uid[uid] = segment
-
-            segment = segment_by_uid[uid]
-
-            usage_dict = {
-                "customer_uid": row.get("customer_uid"),
-                "customer_task_to_agent": row.get("customer_task_to_agent", ""),
-                "predicted_customer_satisfaction_response": row.get("predicted_customer_satisfaction_response", 0.0),
-                "predicted_customer_satisfaction_response_reasoning": row.get("predicted_customer_satisfaction_response_reasoning", ""),
-            }
-            if usage_dict.get("customer_uid"):
-                create_customer_usage_analysis_from_dict(product, segment, usage_dict)
-
-    created_segments = list(segment_by_uid.values())
-    if product is None or pricing_model is None:
-        raise ValueError("CSV did not contain product/pricing rows")
-    return product, pricing_model, created_segments
-
 
 def delete_one(collection_name, doc_id):
     key = normalize_collection_name(collection_name)
