@@ -5,3 +5,4 @@ mongoengine>=0.24.0
 pydantic>=2.0.0
 requests>=2.31.0
 tqdm>=4.64.0
+reportlab>=4.0.0

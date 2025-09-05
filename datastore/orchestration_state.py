@@ -68,15 +68,28 @@ class OrchestrationState(BaseModel):
     
     # Step tracking
     current_step: int = 0
-    total_steps: int = 5
+    total_steps: int = 8  # Updated for new agents + loop
     steps: Dict[str, StepResult] = Field(default_factory=dict)
     
     # Agent outputs (raw text)
     product_research: Optional[str] = None
     segment_research: Optional[str] = None 
     pricing_research: Optional[str] = None
+    competitive_analysis_research: Optional[str] = None
+    cashflow_analysis_research: Optional[str] = None
+    longterm_revenue_research: Optional[str] = None
     value_capture_research: Optional[str] = None
     experimental_pricing_research: Optional[str] = None
+    
+    # Iterative loop outputs
+    positioning_analysis_research: Optional[str] = None
+    persona_simulation_research: Optional[str] = None
+    cashflow_refinement_research: Optional[str] = None
+    
+    # Loop tracking
+    current_iteration: int = 0
+    max_iterations: int = 3
+    loop_completed: bool = False
     
     # Structured outputs from specific agents
     pricing_analysis_structured: Optional[PricingAnalysisResponse] = None
@@ -141,12 +154,15 @@ class OrchestrationState(BaseModel):
     def is_orchestration_complete(self) -> bool:
         required_steps = [
             "product_offering",
+            "competitive_analysis",
+            "cashflow_analysis",
             "segmentwise_roi", 
             "pricing_analysis",
+            "longterm_revenue",
             "value_capture_analysis",
             "experimental_pricing_recommendation"
         ]
-        return all(self.is_step_completed(step) for step in required_steps)
+        return all(self.is_step_completed(step) for step in required_steps) and self.loop_completed
     
     def get_progress_percentage(self) -> float:
         if self.total_steps == 0:
@@ -176,8 +192,14 @@ class OrchestrationState(BaseModel):
                 "product_research": self.product_research,
                 "segment_research": self.segment_research,
                 "pricing_research": self.pricing_research,
+                "competitive_analysis_research": self.competitive_analysis_research,
+                "cashflow_analysis_research": self.cashflow_analysis_research,
+                "longterm_revenue_research": self.longterm_revenue_research,
                 "value_capture_research": self.value_capture_research,
-                "experimental_pricing_research": self.experimental_pricing_research
+                "experimental_pricing_research": self.experimental_pricing_research,
+                "positioning_analysis_research": self.positioning_analysis_research,
+                "persona_simulation_research": self.persona_simulation_research,
+                "cashflow_refinement_research": self.cashflow_refinement_research
             },
             "structured_outputs": {
                 "pricing_analysis_structured": self.pricing_analysis_structured.model_dump() if self.pricing_analysis_structured else None,
@@ -195,7 +217,10 @@ class OrchestrationState(BaseModel):
                 "current_step": self.current_step,
                 "total_steps": self.total_steps,
                 "progress_percentage": self.get_progress_percentage(),
-                "is_complete": self.is_orchestration_complete()
+                "is_complete": self.is_orchestration_complete(),
+                "current_iteration": self.current_iteration,
+                "max_iterations": self.max_iterations,
+                "loop_completed": self.loop_completed
             }
         }
 
@@ -211,7 +236,7 @@ class OrchestrationStateManager:
             product_id=product_id,
             usage_scope=usage_scope,
             customer_segment_id=customer_segment_id,
-            total_steps=5
+            total_steps=8
         )
     
     @staticmethod
@@ -316,9 +341,15 @@ class OrchestrationStateManager:
                 "product_research": bool(state.product_research),
                 "segment_research": bool(state.segment_research),
                 "pricing_research": bool(state.pricing_research),
+                "competitive_analysis_research": bool(state.competitive_analysis_research),
+                "cashflow_analysis_research": bool(state.cashflow_analysis_research),
+                "longterm_revenue_research": bool(state.longterm_revenue_research),
                 "value_capture_research": bool(state.value_capture_research),
                 "experimental_pricing_research": bool(state.experimental_pricing_research),
-                "experimental_pricing_structured": bool(state.experimental_pricing_structured)
+                "experimental_pricing_structured": bool(state.experimental_pricing_structured),
+                "positioning_analysis_research": bool(state.positioning_analysis_research),
+                "persona_simulation_research": bool(state.persona_simulation_research),
+                "cashflow_refinement_research": bool(state.cashflow_refinement_research)
             },
             "next_executable_agents": OrchestrationStateManager.get_next_executable_agents(state),
             "created_at": state.created_at,
@@ -379,8 +410,20 @@ class OrchestrationStateManager:
             state.product_research = agent_outputs.get("product_research")
             state.segment_research = agent_outputs.get("segment_research") 
             state.pricing_research = agent_outputs.get("pricing_research")
+            state.competitive_analysis_research = agent_outputs.get("competitive_analysis_research")
+            state.cashflow_analysis_research = agent_outputs.get("cashflow_analysis_research")
+            state.longterm_revenue_research = agent_outputs.get("longterm_revenue_research")
             state.value_capture_research = agent_outputs.get("value_capture_research")
             state.experimental_pricing_research = agent_outputs.get("experimental_pricing_research")
+            state.positioning_analysis_research = agent_outputs.get("positioning_analysis_research")
+            state.persona_simulation_research = agent_outputs.get("persona_simulation_research")
+            state.cashflow_refinement_research = agent_outputs.get("cashflow_refinement_research")
+            
+            # Restore loop tracking
+            metadata = state_data.get("metadata", {})
+            state.current_iteration = metadata.get("current_iteration", 0)
+            state.max_iterations = metadata.get("max_iterations", 3)
+            state.loop_completed = metadata.get("loop_completed", False)
             
             # Restore structured outputs
             structured_outputs = state_data.get("structured_outputs", {})
