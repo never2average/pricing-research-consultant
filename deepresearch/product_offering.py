@@ -4,7 +4,7 @@ from .prompts import product_deep_research_prompt
 
 
 
-def agent(product_id=None, usage_scope=""):
+def agent(product_id=None, usage_scope="", pricing_objective=None):
     product = Product.objects.get(id=product_id)
     input_data = f"""
 ## Product
@@ -18,6 +18,9 @@ def agent(product_id=None, usage_scope=""):
 """
     if usage_scope:
         input_data = f"{input_data}\n\n## Usage Scope:\n{usage_scope}"
+    
+    if pricing_objective:
+        input_data = f"{input_data}\n\n## Pricing Objective:\n{pricing_objective}"
     
     response = openai_client.responses.create(
         model="o3-deep-research",

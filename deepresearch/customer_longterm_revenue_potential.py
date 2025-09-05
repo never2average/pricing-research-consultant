@@ -3,7 +3,7 @@ from utils.openai_client import openai_client
 from .prompts import longterm_revenue_prompt
 
 
-def agent(product_id=None, segment_research=None, pricing_research=None, product_research=None):
+def agent(product_id=None, segment_research=None, pricing_research=None, product_research=None, pricing_objective=None):
     """
     Long-term Revenue Potential Agent
     Analyzes customer lifetime value and long-term revenue potential
@@ -28,6 +28,9 @@ def agent(product_id=None, segment_research=None, pricing_research=None, product
 ## Pricing Research Context
 {pricing_research or "No pricing research provided"}
 """
+    
+    if pricing_objective:
+        input_data = f"{input_data}\n\n## Pricing Objective:\n{pricing_objective}"
     
     response = openai_client.responses.create(
         model="o3-deep-research",

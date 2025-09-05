@@ -30,7 +30,7 @@ class RecommendedPricingModelResponse(BaseModel):
     min_unit_utilization_period: str
  
  
-def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingModelResponse:
+def agent(product_id: str, value_capture_analysis: str, pricing_objective=None) -> RecommendedPricingModelResponse:
     product = Product.objects.get(id=product_id)
     new_ab_test_pricing_model = openai_client.responses.create(
         model="gpt-5",
@@ -41,7 +41,7 @@ def agent(product_id: str, value_capture_analysis: str) -> RecommendedPricingMod
         },
         {
             "role": "user",
-            "content": value_capture_analysis
+            "content": value_capture_analysis + (f"\n\n## Pricing Objective\n{pricing_objective}" if pricing_objective else "")
         }],
         tools=[
             {"type": "code_interpreter", "container": {"type": "auto"}}

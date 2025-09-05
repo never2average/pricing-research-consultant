@@ -3,7 +3,7 @@ from utils.openai_client import openai_client
 from .prompts import competitive_analysis_prompt
 
 
-def agent(product_id=None):
+def agent(product_id=None, pricing_objective=None):
     """
     Competitive Analysis Agent
     Analyzes competitive landscape and pricing strategies
@@ -22,6 +22,9 @@ def agent(product_id=None):
 ## Product Category
 {product.category}
 """
+    
+    if pricing_objective:
+        input_data = f"{input_data}\n\n## Pricing Objective:\n{pricing_objective}"
     
     response = openai_client.responses.create(
         model="o3-deep-research",

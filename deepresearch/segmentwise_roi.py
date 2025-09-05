@@ -312,7 +312,7 @@ def format_cost_revenue_table(segment_data):
         return "Error: Could not format cost/revenue table"
 
 
-def agent(product_id, product_research):
+def agent(product_id, product_research, pricing_objective=None):
     try:
         logger.info(f"Starting segmentwise ROI analysis for product {product_id}")
         
@@ -411,6 +411,9 @@ def agent(product_id, product_research):
 ## Complete Usage Analysis Data
 {full_usage_table}
 """
+            
+            if pricing_objective:
+                input_text = f"{input_text}\n\n---\n## Pricing Objective\n{pricing_objective}"
         except Exception as e:
             logger.error(f"Error preparing input text: {e}")
             logger.error(f"Full stack trace: {traceback.format_exc()}")

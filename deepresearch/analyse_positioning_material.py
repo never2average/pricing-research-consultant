@@ -3,7 +3,7 @@ from utils.openai_client import openai_client
 from .prompts import positioning_analysis_prompt
 
 
-def agent(product_id=None, experimental_pricing_research=None):
+def agent(product_id=None, experimental_pricing_research=None, pricing_objective=None):
     """
     Positioning Analysis Agent
     Analyzes market positioning and pricing strategy alignment
@@ -22,6 +22,9 @@ def agent(product_id=None, experimental_pricing_research=None):
 ## Experimental Pricing Research
 {experimental_pricing_research or "No experimental pricing provided"}
 """
+    
+    if pricing_objective:
+        input_data = f"{input_data}\n\n## Pricing Objective:\n{pricing_objective}"
     
     response = openai_client.responses.create(
         model="o3-deep-research",

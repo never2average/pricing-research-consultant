@@ -309,7 +309,7 @@ def save_pricing_forecasts(product_id: str, parsed_response: PricingAnalysisResp
         logger.error(f"Full stack trace: {traceback.format_exc()}")
         return
 
-def agent(product_id: str, segment_ids: List[str]=None):
+def agent(product_id: str, segment_ids: List[str]=None, pricing_objective=None):
     try:
         logger.info(f"Starting pricing analysis for product {product_id}")
         
@@ -450,6 +450,9 @@ def agent(product_id: str, segment_ids: List[str]=None):
 ## Pricing Content:
 {table_content}
 """
+            
+            if pricing_objective:
+                prompt = f"{prompt}\n\n## Pricing Objective:\n{pricing_objective}"
         except Exception as e:
             logger.error(f"Error preparing prompt: {e}")
             logger.error(f"Full stack trace: {traceback.format_exc()}")
