@@ -13,6 +13,7 @@ class Competitors(EmbeddedDocument):
 
 class Product(Document):
     name = StringField()
+    category = StringField()
     icp_description = StringField()
     unit_level_cogs = StringField()
     features_description_summary = StringField()
