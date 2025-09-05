@@ -148,6 +148,11 @@ Examples:
         metavar="DESCRIPTION",
         help="Optional use case description for targeted analysis"
     )
+    parser.add_argument(
+        "--pricing-objective",
+        metavar="OBJECTIVE",
+        help="Optional pricing objective to guide the analysis (e.g., 'maximize revenue', 'increase market share', 'optimize for retention')"
+    )
     
     return parser
 
@@ -169,7 +174,7 @@ elif args.orchestrator:
     if not args.product_id:
         parser.error("--product-id is required with --orchestrator")
     try:
-        final_agent(str(args.product_id), args.use_case, None)
+        final_agent(str(args.product_id), args.use_case, None, args.pricing_objective)
         print("Orchestrator run complete")
     except Exception as e:
         print(f"Error running orchestrator.final_agent: {e}")

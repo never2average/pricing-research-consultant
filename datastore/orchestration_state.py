@@ -65,6 +65,7 @@ class OrchestrationState(BaseModel):
     # Initial inputs
     usage_scope: Optional[str] = None
     customer_segment_id: Optional[str] = None
+    pricing_objective: Optional[str] = None
     
     # Step tracking
     current_step: int = 0
@@ -228,7 +229,7 @@ class OrchestrationStateManager:
     """Utility class for managing orchestration state across agents"""
     
     @staticmethod
-    def create_initial_state(product_id: str, usage_scope: Optional[str] = None, customer_segment_id: Optional[str] = None) -> OrchestrationState:
+    def create_initial_state(product_id: str, usage_scope: Optional[str] = None, customer_segment_id: Optional[str] = None, pricing_objective: Optional[str] = None) -> OrchestrationState:
         """Create a new orchestration state with initial parameters"""
         import uuid
         return OrchestrationState(
@@ -236,13 +237,14 @@ class OrchestrationStateManager:
             product_id=product_id,
             usage_scope=usage_scope,
             customer_segment_id=customer_segment_id,
+            pricing_objective=pricing_objective,
             total_steps=8
         )
     
     @staticmethod
     def get_agent_inputs(state: OrchestrationState, agent_name: str) -> Dict[str, Any]:
         """Get the required inputs for a specific agent based on current state"""
-        inputs = {"product_id": state.product_id}
+        inputs = {"product_id": state.product_id, "pricing_objective": state.pricing_objective}
         
         if agent_name == "product_offering":
             if state.usage_scope:
@@ -371,7 +373,8 @@ class OrchestrationStateManager:
             product_id=state.product_id,
             step_input={"initial_params": {
                 "usage_scope": state.usage_scope,
-                "customer_segment_id": state.customer_segment_id
+                "customer_segment_id": state.customer_segment_id,
+                "pricing_objective": state.pricing_objective
             }},
             step_output=state_dict
         )
@@ -396,13 +399,17 @@ class OrchestrationStateManager:
             state_data = overall_result.step_output
             
             # Reconstruct the state
+            initial_params = state_data.get("initial_params", {}) or {}
             state = OrchestrationState(
                 invocation_id=invocation_id,
                 product_id=state_data.get("product_id"),
                 created_at=state_data.get("metadata", {}).get("created_at"),
                 updated_at=state_data.get("metadata", {}).get("updated_at"),
                 current_step=state_data.get("metadata", {}).get("current_step", 0),
-                total_steps=state_data.get("metadata", {}).get("total_steps", 5)
+                total_steps=state_data.get("metadata", {}).get("total_steps", 5),
+                usage_scope=initial_params.get("usage_scope"),
+                customer_segment_id=initial_params.get("customer_segment_id"),
+                pricing_objective=initial_params.get("pricing_objective")
             )
             
             # Restore agent outputs

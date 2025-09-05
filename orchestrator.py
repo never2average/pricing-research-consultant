@@ -59,7 +59,7 @@ def run_competitive_analysis(product_id, invocation_id, state):
     competitive_input = {"product_id": product_id}
     state.start_step("competitive_analysis", 2, competitive_input)
     try:
-        result = competitive_analysis_agent(product_id)
+        result = competitive_analysis_agent(product_id, state.pricing_objective)
         state.competitive_analysis_research = result
         state.complete_step("competitive_analysis", result)
         save_orchestration_step(invocation_id, "competitive_analysis", 2, product_id, competitive_input, result)
@@ -75,7 +75,7 @@ def run_cashflow_analysis(product_id, invocation_id, state):
     cashflow_input = {"product_id": product_id}
     state.start_step("cashflow_analysis", 2, cashflow_input)
     try:
-        result = cashflow_analysis_agent(product_id)
+        result = cashflow_analysis_agent(product_id, None, state.pricing_objective)
         state.cashflow_analysis_research = result
         state.complete_step("cashflow_analysis", result)
         save_orchestration_step(invocation_id, "cashflow_analysis", 2, product_id, cashflow_input, result)
@@ -94,7 +94,7 @@ def run_segment_roi(product_id, product_research, invocation_id, state):
     }
     state.start_step("segmentwise_roi", 3, segment_roi_input)
     try:
-        result = segmentwise_roi_agent(product_id, product_research)
+        result = segmentwise_roi_agent(product_id, product_research, state.pricing_objective)
         state.segment_research = result
         state.complete_step("segmentwise_roi", result)
         save_orchestration_step(invocation_id, "segmentwise_roi", 3, product_id, segment_roi_input, result)
@@ -112,7 +112,7 @@ def run_pricing_analysis(product_id, invocation_id, state):
     }
     state.start_step("pricing_analysis", 4, pricing_analysis_input)
     try:
-        result = pricing_analysis_agent(product_id)
+        result = pricing_analysis_agent(product_id, None, state.pricing_objective)
         state.pricing_research = result
         state.complete_step("pricing_analysis", result)
         save_orchestration_step(invocation_id, "pricing_analysis", 4, product_id, pricing_analysis_input, result)
@@ -132,7 +132,7 @@ def run_positioning_analysis(product_id, experimental_pricing_research, iteratio
     step_name = f"positioning_analysis_iter_{iteration}"
     state.start_step(step_name, 70 + iteration * 10, positioning_input)
     
-    result = positioning_analysis_agent(product_id, experimental_pricing_research)
+    result = positioning_analysis_agent(product_id, experimental_pricing_research, state.pricing_objective)
     state.positioning_analysis_research = result
     state.complete_step(step_name, result)
     save_orchestration_step(invocation_id, step_name, 70 + iteration * 10, product_id, positioning_input, result)
@@ -148,7 +148,7 @@ def run_persona_simulation(product_id, experimental_pricing_research, iteration,
     step_name = f"persona_simulation_iter_{iteration}"
     state.start_step(step_name, 71 + iteration * 10, persona_input)
     
-    result = persona_simulation_agent(product_id, experimental_pricing_research)
+    result = persona_simulation_agent(product_id, experimental_pricing_research, state.pricing_objective)
     state.persona_simulation_research = result
     state.complete_step(step_name, result)
     save_orchestration_step(invocation_id, step_name, 71 + iteration * 10, product_id, persona_input, result)
@@ -201,7 +201,8 @@ def run_iterative_loop(product_id, invocation_id, state):
                 product_id, 
                 state.experimental_pricing_research,
                 positioning_result, 
-                persona_result
+                persona_result,
+                state.pricing_objective
             )
             
             state.cashflow_refinement_research = cashflow_refinement_result
@@ -231,7 +232,7 @@ def run_iterative_loop(product_id, invocation_id, state):
                 break
 
 
-def final_agent(product_id, usage_scope=None, customer_segment_id=None):
+def final_agent(product_id, usage_scope=None, customer_segment_id=None, pricing_objective=None):
     # Initialize orchestration state
     invocation_id = str(uuid.uuid4())
     state = OrchestrationState(
@@ -239,6 +240,7 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
         product_id=product_id,
         usage_scope=usage_scope,
         customer_segment_id=customer_segment_id,
+        pricing_objective=pricing_objective,
         total_steps=8
     )
     
@@ -257,7 +259,7 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
         
         state.start_step("product_offering", 1, product_offering_input)
         try:
-            product_research = product_offering_agent(product_id, usage_scope)
+            product_research = product_offering_agent(product_id, usage_scope, state.pricing_objective)
             state.product_research = product_research
             state.complete_step("product_offering", product_research)
             save_orchestration_step(invocation_id, "product_offering", 1, product_id, product_offering_input, product_research)
@@ -311,7 +313,7 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
         
         state.start_step("longterm_revenue", 5, longterm_revenue_input)
         try:
-            longterm_revenue_research = longterm_revenue_agent(product_id, segment_research, pricing_research, product_research)
+            longterm_revenue_research = longterm_revenue_agent(product_id, segment_research, pricing_research, product_research, state.pricing_objective)
             state.longterm_revenue_research = longterm_revenue_research
             state.complete_step("longterm_revenue", longterm_revenue_research)
             save_orchestration_step(invocation_id, "longterm_revenue", 5, product_id, longterm_revenue_input, longterm_revenue_research)
@@ -333,7 +335,7 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
         
         state.start_step("value_capture_analysis", 6, value_capture_input)
         try:
-            value_capture_research = value_capture_analysis_agent(segment_research, pricing_research, product_research)
+            value_capture_research = value_capture_analysis_agent(segment_research, pricing_research, product_research, state.pricing_objective)
             state.value_capture_research = value_capture_research
             state.complete_step("value_capture_analysis", value_capture_research)
             save_orchestration_step(invocation_id, "value_capture_analysis", 6, product_id, value_capture_input, value_capture_research)
@@ -353,7 +355,7 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None):
         
         state.start_step("experimental_pricing_recommendation", 7, experimental_pricing_input)
         try:
-            experimental_pricing_research = experimental_pricing_recommendation_agent(product_id, value_capture_research)
+            experimental_pricing_research = experimental_pricing_recommendation_agent(product_id, value_capture_research, state.pricing_objective)
             
             # Store both raw result and structured data
             state.experimental_pricing_research = json.dumps(experimental_pricing_research) if isinstance(experimental_pricing_research, dict) else str(experimental_pricing_research)
