@@ -11,6 +11,12 @@ class CustomerSegment(Document):
     segment_revenue_attribution_summary = StringField()
 
 
+class Competitors(Document):
+    name = StringField()
+    url = URLField()
+    background_research_docs = ListField(URLField())
+    competitor_vs_id = StringField()
+
 class Product(Document):
     product_name = StringField()
     product_industry = StringField()
@@ -24,6 +30,9 @@ class Product(Document):
     product_marketing_docs_vs_id = StringField()
     product_technical_docs = ListField(URLField())
     product_technical_docs_vs_id = StringField()
+    product_usage_docs = ListField(URLField())
+    product_usage_docs_vs_id = StringField()
+    product_competitors = EmbeddedDocumentListField(Competitors)
     
 
 class TsObject(EmbeddedDocument):

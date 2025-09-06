@@ -17,6 +17,11 @@ class CustomerSegmentPydantic(BaseModel):
     segment_usage_summary: Optional[str] = None
     segment_revenue_attribution_summary: Optional[str] = None
 
+class CompetitorsPydantic(BaseModel):
+    name: Optional[str] = None
+    url: Optional[str] = None
+    background_research_docs: Optional[List[str]] = None
+    competitor_vs_id: Optional[str] = None
 
 class ProductPydantic(BaseModel):
     product_name: Optional[str] = None
@@ -31,6 +36,9 @@ class ProductPydantic(BaseModel):
     product_marketing_docs_vs_id: Optional[str] = None
     product_technical_docs: Optional[List[str]] = None
     product_technical_docs_vs_id: Optional[str] = None
+    product_usage_docs: Optional[List[str]] = None
+    product_usage_docs_vs_id: Optional[str] = None
+    product_competitors: Optional[CompetitorsPydantic] = None
 
 
 
