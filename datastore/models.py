@@ -56,6 +56,7 @@ class PricingExperimentRuns(Document):
             "deployed", "feedback_collected"
         ]
     )
+    product_seed_context = StringField()
     positioning_summary = StringField()
     usage_summary = StringField()
     roi_gaps = StringField()

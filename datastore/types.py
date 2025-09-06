@@ -40,6 +40,7 @@ class PricingExperimentPydantic(BaseModel):
     experiment_gen_stage: Optional[str] = None
     objective: Optional[str] = None
     usecase: Optional[str] = None
+    product_seed_context: Optional[str]=None
     relevant_segments: Optional[List[CustomerSegmentPydantic]] = None
     positioning_summary: Optional[str] = None
     usage_summary: Optional[str] = None
