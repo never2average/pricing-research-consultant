@@ -2,6 +2,9 @@ from datastore.models import PricingExperimentRequest
 from logical_functions.stage_config import get_stage_mapping, get_stage_order
 from logical_functions.experiment_run_manager import create_initial_experiment_run, create_experiment_run, update_current_experiment_run
 from logical_functions.data_converter import convert_to_pydantic
+import asyncio
+import inspect
+
 
 def start_experiment_workflow(experiment_request: PricingExperimentRequest):
     stage_mapping = get_stage_mapping()
@@ -31,7 +34,10 @@ def start_experiment_workflow(experiment_request: PricingExperimentRequest):
                     if orchestrator is None:
                         continue
                     try:
-                        updated_data = orchestrator(updated_data)
+                        result = orchestrator(updated_data)
+                        if inspect.isawaitable(result):
+                            result = asyncio.run(result)
+                        updated_data = result
                         if not updated_data:
                             print(f"Warning: {orchestrator.__name__} returned empty data")
                             updated_data = [experiment_data]

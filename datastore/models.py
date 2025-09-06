@@ -75,7 +75,7 @@ class PricingExperimentRuns(Document):
     revenue_projections = EmbeddedDocumentListField(TsObject)
     cashflow_feasibility_comments = StringField()
     experiment_feedback_summary = StringField()
-    relevant_segments = ListField(ReferenceField(CustomerSegment))
+    relevant_segment = ReferenceField(CustomerSegment)
     cashflow_no_negative_impact_approval_given = BooleanField()
     experiment_is_deployed = BooleanField(default=False)
     experiment_deployed_on = DateTimeField()
