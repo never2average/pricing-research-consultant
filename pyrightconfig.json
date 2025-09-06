@@ -1,0 +1,24 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "venv",
+    "**/__pycache__",
+    "**/*.pyc"
+  ],
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "off",
+  "useLibraryCodeForTypes": true,
+  "venv": "venv",
+  "reportAttributeAccessIssue": false,
+  "reportOptionalMemberAccess": false,
+  "reportUnknownMemberType": false,
+  "reportArgumentType": false,
+  "reportCallIssue": false,
+  "reportGeneralTypeIssues": false,
+  "reportPrivateImportUsage": false,
+  "reportReturnType": false
+}
