@@ -33,6 +33,7 @@ class ProductPydantic(BaseModel):
     product_technical_docs_vs_id: Optional[str] = None
 
 
+
 class PricingExperimentPydantic(BaseModel):
     product: Optional[ProductPydantic] = None
     experiment_number: Optional[int] = None
@@ -48,6 +49,7 @@ class PricingExperimentPydantic(BaseModel):
     usage_projections: Optional[List[TsObjectPydantic]] = None
     revenue_projections: Optional[List[TsObjectPydantic]] = None
     cashflow_feasibility_comments: Optional[str] = None
-    experiment_is_deployed: Optional[datetime] = None
+    cashflow_no_negative_impact_approval_given: Optional[bool] = None
+    experiment_is_deployed: Optional[bool] = None
     experiment_deployed_on: Optional[datetime] = None
     experiment_feedback_summary: Optional[str] = None

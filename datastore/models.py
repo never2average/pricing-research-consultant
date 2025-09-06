@@ -1,4 +1,4 @@
-from mongoengine import URLField, DateTimeField, FloatField
+from mongoengine import URLField, DateTimeField, FloatField, BooleanField
 from mongoengine import Document, StringField, ListField, ReferenceField
 from mongoengine import IntField, EmbeddedDocument, EmbeddedDocumentListField
 
@@ -31,19 +31,31 @@ class TsObject(EmbeddedDocument):
     usage_unit = StringField()
     target_date = DateTimeField()
 
-class PricingExperiment(Document):
+class PricingExperimentRequest(Document):
     product = ReferenceField(Product)
     experiment_number = IntField()
-    experiment_gen_stage = StringField(
-        choices=[
-            "segments_loaded", "positioning_usage_analysis_done",
-            "roi_gap_analyzer_run", "experimental_plan_generated", "simulations_run",
-            "scenario_builder_completed", "cashflow_feasibility_runs_completed"
-        ]
-    )
     objective = StringField()
     usecase = StringField()
-    relevant_segments = ListField(ReferenceField(CustomerSegment))
+    experiment_gen_stage = StringField(
+        choices=[
+            "product_context_initialized", "segments_loaded", "positioning_usage_analysis_done",
+            "roi_gap_analyzer_run", "experimental_plan_generated", "simulations_run",
+            "scenario_builder_completed", "cashflow_feasibility_runs_completed",
+            "completed", "deployed", "feedback_collected"
+        ]
+    )
+    created_on = DateTimeField()
+
+class PricingExperimentRuns(Document):
+    experiment_request = ReferenceField(PricingExperimentRequest, required=True)
+    experiment_gen_stage = StringField(
+        choices=[
+            "product_context_initialized", "segments_loaded", "positioning_usage_analysis_done",
+            "roi_gap_analyzer_run", "experimental_plan_generated", "simulations_run",
+            "scenario_builder_completed", "cashflow_feasibility_runs_completed",
+            "deployed", "feedback_collected"
+        ]
+    )
     positioning_summary = StringField()
     usage_summary = StringField()
     roi_gaps = StringField()
@@ -52,6 +64,9 @@ class PricingExperiment(Document):
     usage_projections = EmbeddedDocumentListField(TsObject)
     revenue_projections = EmbeddedDocumentListField(TsObject)
     cashflow_feasibility_comments = StringField()
-    experiment_is_deployed = DateTimeField()
-    experiment_deployed_on = DateTimeField()
     experiment_feedback_summary = StringField()
+    relevant_segments = ListField(ReferenceField(CustomerSegment))
+    cashflow_no_negative_impact_approval_given = BooleanField()
+    experiment_is_deployed = BooleanField(default=False)
+    experiment_deployed_on = DateTimeField()
+    created_on = DateTimeField()
