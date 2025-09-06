@@ -1,210 +1,60 @@
-import os
-import sys
-import json
-import argparse
-from typing import Any, List, Tuple, Union
-from orchestrator import final_agent
-from datastore.connectors import (
-    connect_db,
-    create_from_json_file,
-    delete_one,
-    delete_many,
-    get_one,
-    list_all_ids,
-    list_one_markdown,
-    list_all_markdown,
-)
-from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from datastore.models import PricingExperiment, Product
 
-load_dotenv()
-connect_db()
+app = FastAPI()
 
-
-def process_json_file(path: str) -> Tuple[Any, Union[Any, List[Any]], List[Any]]:
-    return create_from_json_file(path)
-
- 
-
-
-def print_creation_results(product: Any, pricing_models: Union[Any, List[Any]], segments: List[Any]) -> None:
-    """Print beautified creation results"""
-    print("\n" + "="*60)
-    print("🎉 CREATION SUCCESSFUL")
-    print("="*60)
-
-    print(f"\n📦 Product Created:")
-    print(f"   ID: {product.id}")
-    print(f"   Name: {product.name}")
-
-    print(f"\n💰 Pricing Models Created:")
-    if isinstance(pricing_models, list):
-        for i, model in enumerate(pricing_models, 1):
-            print(f"   {i}. ID: {model.id}")
-            print(f"      Plan: {model.plan_name}")
-            print(f"      Price: ${model.unit_price}")
-    else:
-        print(f"   ID: {pricing_models.id}")
-        print(f"   Plan: {pricing_models.plan_name}")
-        print(f"   Price: ${pricing_models.unit_price}")
-
-    print(f"\n👥 Customer Segments Created:")
-    for i, segment in enumerate(segments, 1):
-        print(f"   {i}. ID: {segment.id}")
-        print(f"      Name: {segment.customer_segment_name}")
-        print(f"      UID: {segment.customer_segment_uid}")
-
-    print("\n" + "="*60)
-    print(f"✅ Total: 1 Product, {len(pricing_models) if isinstance(pricing_models, list) else 1} Pricing Model(s), {len(segments)} Segment(s)")
-    print("="*60 + "\n")
-
-
-def build_parser() -> argparse.ArgumentParser:
-    description = """
-Pricing Research Consultant CLI Tool
-
-A comprehensive tool for managing products, pricing models, and customer segments,
-with advanced pricing analysis and recommendation capabilities.
-
-Examples:
-  # Create from JSON file
-  python main.py --create --json product_data.json
-  
-  
-  
-  # Run pricing analysis
-  python main.py --orchestrator --product-id PROD123 --use-case "SaaS optimization"
-  
-  # List all products
-  python main.py --listall products
-  
-  # View specific pricing model
-  python main.py --list pricing_models MODEL456
-  
-  # Delete a customer segment
-  python main.py --delete customer_segments SEG789
-    """
-    
-    parser = argparse.ArgumentParser(
-        prog="pricing-cli",
-        description=description,
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
-    # Main operation modes
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument(
-        "--create", 
-        action="store_true",
-        help="Create new products, pricing models, and segments from input data"
-    )
-    mode.add_argument(
-        "--orchestrator", 
-        action="store_true",
-        help="Run comprehensive pricing analysis and generate recommendations"
-    )
-    mode.add_argument(
-        "--delete", 
-        nargs=2, 
-        metavar=("collection", "id"),
-        help="Delete a single document from specified collection (products, pricing_models, customer_segments)"
-    )
-    mode.add_argument(
-        "--deletemany", 
-        nargs=2, 
-        metavar=("collection", "ids"),
-        help="Delete multiple documents from collection (comma-separated IDs)"
-    )
-    mode.add_argument(
-        "--list", 
-        dest="list_one", 
-        nargs=2, 
-        metavar=("collection", "id"),
-        help="Display detailed information about a specific document"
-    )
-    mode.add_argument(
-        "--listall", 
-        nargs=1, 
-        metavar=("collection",),
-        help="List all documents in the specified collection"
-    )
-
-    # Input/Output options
-    io_group = parser.add_mutually_exclusive_group(required=False)
-    io_group.add_argument(
-        "--json", 
-        dest="input_json",
-        metavar="FILE",
-        help="Input JSON file path (required with --create)"
-    )
-    
-
-    # Additional parameters
-    parser.add_argument(
-        "--product-id",
-        metavar="ID",
-        help="Product ID for orchestrator analysis (required with --orchestrator)"
-    )
-    parser.add_argument(
-        "--use-case",
-        metavar="DESCRIPTION",
-        help="Optional use case description for targeted analysis"
-    )
-    parser.add_argument(
-        "--pricing-objective",
-        metavar="OBJECTIVE",
-        help="Optional pricing objective to guide the analysis (e.g., 'maximize revenue', 'increase market share', 'optimize for retention')"
-    )
-    
-    return parser
-
-
-
-
-parser = build_parser()
-args = parser.parse_args()
-
-if args.create:
-    if not args.input_json:
-        parser.error("--json is required with --create")
-
-    product, pricing_models, segments = process_json_file(args.input_json)
-
-    print_creation_results(product, pricing_models, segments)
-
-elif args.orchestrator:
-    if not args.product_id:
-        parser.error("--product-id is required with --orchestrator")
+@app.post("/experiments/")
+async def create_experiment(
+    product_id: str,
+    experiment_number: int,
+    objective: str,
+    usecase: str
+):
     try:
-        final_agent(str(args.product_id), args.use_case, None, args.pricing_objective)
-        print("Orchestrator run complete")
+        product = Product.objects(id=product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+
+        experiment = PricingExperiment(
+            product=product,
+            experiment_number=experiment_number,
+            experiment_gen_stage="segments_loaded",
+            objective=objective,
+            usecase=usecase,
+        )
+        experiment.save()
+        
+        return {"message": "Experiment created successfully", "id": str(experiment.id)}
+        
     except Exception as e:
-        print(f"Error running orchestrator.final_agent: {e}")
-elif args.delete:
-    collection, doc_id = args.delete
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/experiments/{stage}")
+async def get_experiments_by_stage(stage: str):
     try:
-        delete_one(collection, doc_id)
-        print(f"Deleted {collection}: {doc_id}")
+        experiments = PricingExperiment.objects(experiment_gen_stage=stage)
+        return {
+            "experiments": [
+                {
+                    "id": str(exp.id),
+                    "product": exp.product.product_name,
+                    "product_id": str(exp.product.id),
+                    "experiment_number": exp.experiment_number,
+                    "experiment_gen_stage": exp.experiment_gen_stage,
+                    "objective": exp.objective if exp.objective else None,
+                    "usecase": exp.usecase if exp.usecase else None,
+                    "positioning_summary": exp.positioning_summary if exp.positioning_summary else None,
+                    "usage_summary": exp.usage_summary if exp.usage_summary else None,
+                    "roi_gaps": exp.roi_gaps if exp.roi_gaps else None,
+                    "experimental_pricing_plan": exp.experimental_pricing_plan if exp.experimental_pricing_plan else None,
+                    "simulation_result": exp.simulation_result if exp.simulation_result else None,
+                    "cashflow_feasibility_comments": exp.cashflow_feasibility_comments if exp.cashflow_feasibility_comments else None,
+                    "experiment_feedback_summary": exp.experiment_feedback_summary if exp.experiment_feedback_summary else None,
+                    "experiment_is_deployed": str(exp.experiment_is_deployed) if exp.experiment_is_deployed else None,
+                    "experiment_deployed_on": str(exp.experiment_deployed_on) if exp.experiment_deployed_on else None
+                } for exp in experiments
+            ]
+        }
     except Exception as e:
-        print(f"Error deleting {collection} {doc_id}: {e}")
-        sys.exit(1)
-elif args.deletemany:
-    collection, ids_csv = args.deletemany
-    ids = [x.strip() for x in ids_csv.split(",") if x.strip()]
-    result = delete_many(collection, ids)
-    print(f"Deleted {result['deleted']}/{result['requested']} from {collection}")
-    if result["errors"]:
-        print(f"Failed ids: {result['errors']}")
-elif args.list_one:
-    collection, doc_id = args.list_one
-    try:
-        print(list_one_markdown(collection, doc_id))
-    except Exception as e:
-        print(f"Error fetching {collection} {doc_id}: {e}")
-        sys.exit(1)
-elif args.listall:
-    collection = args.listall[0]
-    try:
-        print(list_all_markdown(collection))
-    except Exception as e:
-        print(f"Error listing {collection}: {e}")
-        sys.exit(1)
+        raise HTTPException(status_code=500, detail=str(e))
