@@ -1,3 +1,4 @@
+from typing import Optional
 from utils.openai_client import openai_client, litellm_client
 from .prompts import rabbithole_think_prompt, value_capture_analysis_prompt
  
@@ -29,7 +30,7 @@ def go_down_rabbithole(hypothesis: str):
     )
     return thoughts.output_text
 
-def agent(segment_roi_analysis, pricing_analysis, product_research, pricing_objective=None):
+def agent(segment_roi_analysis: str, pricing_analysis: str, product_research: str, pricing_objective: Optional[str] = None) -> str:
     thoughts = openai_client.responses.create(
         model="gpt-5",
         instructions=value_capture_analysis_prompt,

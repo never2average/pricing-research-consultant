@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from typing import Any, Optional, List, Dict, Union
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -9,14 +10,14 @@ from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 
 
-def safe_str(value):
+def safe_str(value: Any) -> str:
     """Safely convert value to string"""
     if value is None:
         return "N/A"
     return str(value)
 
 
-def format_json_content(data, max_length=500):
+def format_json_content(data: Any, max_length: int = 500) -> str:
     """Format JSON data for PDF display"""
     if isinstance(data, dict):
         formatted = json.dumps(data, indent=2)
@@ -36,17 +37,17 @@ def format_json_content(data, max_length=500):
     return formatted
 
 
-def create_section_header(title, styles):
+def create_section_header(title: str, styles: Dict[str, Any]) -> Any:
     """Create a section header"""
     return Paragraph(title, styles['section_header'])
 
 
-def create_subsection_header(title, styles):
+def create_subsection_header(title: str, styles: Dict[str, Any]) -> Any:
     """Create a subsection header"""
     return Paragraph(title, styles['subsection_header'])
 
 
-def create_content_paragraph(content, styles):
+def create_content_paragraph(content: str, styles: Dict[str, Any]) -> Any:
     """Create a content paragraph with proper formatting"""
     if not content:
         content = "No data available"
@@ -152,7 +153,7 @@ def create_pricing_table(pricing_response, styles):
     return elements
 
 
-def generate_pdf_report(state, output_path=None):
+def generate_pdf_report(state: Any, output_path: Optional[str] = None) -> str:
     """Generate comprehensive PDF report from orchestration state"""
     
     if not output_path:

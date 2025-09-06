@@ -1,6 +1,7 @@
 import random
 import logging
 import traceback
+from typing import List, Optional, Any
 from .prompts import roi_prompt
 from bson.objectid import ObjectId
 from utils.openai_client import openai_client
@@ -9,7 +10,7 @@ from datastore.models import CustomerSegment, CustomerUsageAnalysis, PricingPlan
 logger = logging.getLogger(__name__)
 
 
-def format_segments_table(segments):
+def format_segments_table(segments: List[Any]) -> str:
     try:
         if not segments:
             return "No customer segments found."
@@ -312,7 +313,7 @@ def format_cost_revenue_table(segment_data):
         return "Error: Could not format cost/revenue table"
 
 
-def agent(product_id, product_research, pricing_objective=None):
+def agent(product_id: str, product_research: str, pricing_objective: Optional[str] = None) -> str:
     try:
         logger.info(f"Starting segmentwise ROI analysis for product {product_id}")
         

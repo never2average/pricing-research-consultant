@@ -1,9 +1,10 @@
+from typing import Optional
 from datastore.models import Product
 from utils.openai_client import openai_client
 from .prompts import competitive_analysis_prompt
 
 
-def agent(product_id=None, pricing_objective=None):
+def agent(product_id: Optional[str] = None, pricing_objective: Optional[str] = None) -> str:
     """
     Competitive Analysis Agent
     Analyzes competitive landscape and pricing strategies

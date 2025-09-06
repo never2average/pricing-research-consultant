@@ -1,9 +1,10 @@
+from typing import Optional
 from datastore.models import Product
 from utils.openai_client import openai_client
 from .prompts import longterm_revenue_prompt
 
 
-def agent(product_id=None, segment_research=None, pricing_research=None, product_research=None, pricing_objective=None):
+def agent(product_id: Optional[str] = None, segment_research: Optional[str] = None, pricing_research: Optional[str] = None, product_research: Optional[str] = None, pricing_objective: Optional[str] = None) -> str:
     """
     Long-term Revenue Potential Agent
     Analyzes customer lifetime value and long-term revenue potential

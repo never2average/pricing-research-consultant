@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import tempfile
+from typing import List, Optional, Any, Dict, Union
 import requests
 from utils.openai_client import openai_client
 from mongoengine import ReferenceField, DateTimeField, DynamicField, EmbeddedDocumentListField
@@ -23,7 +24,7 @@ class Product(Document):
     vector_store_id = StringField()
     marketing_vector_store_id = StringField()
     
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         # Validate doc_urls for new products
         if self.id is None and self.product_documentations:
             self._validate_and_clean_doc_urls()
@@ -76,7 +77,7 @@ class Product(Document):
             except Exception as e:
                 print(f"Error creating marketing vector store for product {self.name}: {e}")
 
-    def _validate_and_clean_doc_urls(self):
+    def _validate_and_clean_doc_urls(self) -> None:
         """Validate and clean documentation URLs for new products"""
         if not self.product_documentations:
             return
@@ -126,7 +127,7 @@ class Product(Document):
         else:
             print("Warning: No valid documentation URLs found for new product")
 
-    def _validate_and_clean_marketing_doc_urls(self):
+    def _validate_and_clean_marketing_doc_urls(self) -> None:
         """Validate and clean marketing documentation URLs for new products"""
         if not self.marketing_documentations:
             return
@@ -176,7 +177,7 @@ class Product(Document):
         else:
             print("Warning: No valid marketing documentation URLs found for new product")
 
-    def download_documentation_files(self):
+    def download_documentation_files(self) -> List[str]:
         downloaded_files = []
         
         for url in self.product_documentations:
@@ -200,7 +201,7 @@ class Product(Document):
         
         return downloaded_files
 
-    def download_marketing_documentation_files(self):
+    def download_marketing_documentation_files(self) -> List[str]:
         downloaded_files = []
         
         for url in self.marketing_documentations:
@@ -224,7 +225,7 @@ class Product(Document):
         
         return downloaded_files
     
-    def create_vector_store_for_product(self):
+    def create_vector_store_for_product(self) -> Optional[str]:
         if not self.product_documentations:
             return None
 
@@ -284,7 +285,7 @@ class Product(Document):
                 except:
                     pass
 
-    def create_marketing_vector_store(self):
+    def create_marketing_vector_store(self) -> Optional[str]:
         if not self.marketing_documentations:
             return None
 

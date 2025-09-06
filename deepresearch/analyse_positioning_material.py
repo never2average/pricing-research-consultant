@@ -1,9 +1,10 @@
+from typing import Optional
 from datastore.models import Product
 from utils.openai_client import openai_client
 from .prompts import positioning_analysis_prompt
 
 
-def agent(product_id=None, experimental_pricing_research=None, pricing_objective=None):
+def agent(product_id: Optional[str] = None, experimental_pricing_research: Optional[str] = None, pricing_objective: Optional[str] = None) -> str:
     """
     Positioning Analysis Agent
     Analyzes market positioning and pricing strategy alignment

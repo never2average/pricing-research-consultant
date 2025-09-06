@@ -1,9 +1,10 @@
+from typing import Optional
 from datastore.models import Product
 from utils.openai_client import openai_client
 from .prompts import cashflow_analysis_prompt
 
 
-def agent(product_id=None, pricing_research=None, pricing_objective=None):
+def agent(product_id: Optional[str] = None, pricing_research: Optional[str] = None, pricing_objective: Optional[str] = None) -> str:
     """
     Cashflow Analyst Agent
     Analyzes financial impact and cashflow implications of pricing strategies
@@ -44,7 +45,7 @@ def agent(product_id=None, pricing_research=None, pricing_objective=None):
     return response.content[0].text
 
 
-def refinement_agent(product_id=None, experimental_pricing_research=None, positioning_analysis=None, persona_simulation=None, pricing_objective=None):
+def refinement_agent(product_id: Optional[str] = None, experimental_pricing_research: Optional[str] = None, positioning_analysis: Optional[str] = None, persona_simulation: Optional[str] = None, pricing_objective: Optional[str] = None) -> str:
     """
     Cashflow Analyst Refinement Agent
     Refines cashflow analysis based on positioning and persona simulation feedback

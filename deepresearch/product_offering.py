@@ -1,10 +1,11 @@
+from typing import Optional
 from datastore.models import Product
 from utils.openai_client import openai_client
 from .prompts import product_deep_research_prompt
 
 
 
-def agent(product_id=None, usage_scope="", pricing_objective=None):
+def agent(product_id: Optional[str] = None, usage_scope: str = "", pricing_objective: Optional[str] = None) -> str:
     product = Product.objects.get(id=product_id)
     input_data = f"""
 ## Product

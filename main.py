@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import argparse
+from typing import Any, List, Tuple, Union
 from orchestrator import final_agent
 from datastore.connectors import (
     connect_db,
@@ -19,13 +20,13 @@ load_dotenv()
 connect_db()
 
 
-def process_json_file(path):
+def process_json_file(path: str) -> Tuple[Any, Union[Any, List[Any]], List[Any]]:
     return create_from_json_file(path)
 
  
 
 
-def print_creation_results(product, pricing_models, segments):
+def print_creation_results(product: Any, pricing_models: Union[Any, List[Any]], segments: List[Any]) -> None:
     """Print beautified creation results"""
     print("\n" + "="*60)
     print("🎉 CREATION SUCCESSFUL")
@@ -57,7 +58,7 @@ def print_creation_results(product, pricing_models, segments):
     print("="*60 + "\n")
 
 
-def build_parser():
+def build_parser() -> argparse.ArgumentParser:
     description = """
 Pricing Research Consultant CLI Tool
 

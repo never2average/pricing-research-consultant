@@ -1,5 +1,6 @@
 import uuid
 import json
+from typing import Any, Optional
 from deepresearch.product_offering import agent as product_offering_agent
 from deepresearch.competitive_analysis import agent as competitive_analysis_agent
 from deepresearch.cashflow_analyst import agent as cashflow_analysis_agent, refinement_agent as cashflow_refinement_agent
@@ -17,7 +18,7 @@ from utils.pdf_generator import generate_pdf_report
 from tqdm import tqdm
 
 
-def save_orchestration_step(invocation_id, step_name, step_order, product_id, step_input, step_output):
+def save_orchestration_step(invocation_id: str, step_name: str, step_order: int, product_id: str, step_input: Any, step_output: Any) -> None:
     """Helper function to save orchestration step results to MongoDB"""
     try:
         # Convert step_input to serializable format
@@ -54,7 +55,7 @@ def save_orchestration_step(invocation_id, step_name, step_order, product_id, st
         print(f"Error saving step {step_name}: {e}")
 
 
-def run_competitive_analysis(product_id, invocation_id, state):
+def run_competitive_analysis(product_id: str, invocation_id: str, state: Any) -> Any:
     """Run competitive analysis step"""
     competitive_input = {"product_id": product_id}
     state.start_step("competitive_analysis", 2, competitive_input)
@@ -70,7 +71,7 @@ def run_competitive_analysis(product_id, invocation_id, state):
         raise e
 
 
-def run_cashflow_analysis(product_id, invocation_id, state):
+def run_cashflow_analysis(product_id: str, invocation_id: str, state: Any) -> Any:
     """Run cashflow analysis step"""
     cashflow_input = {"product_id": product_id}
     state.start_step("cashflow_analysis", 2, cashflow_input)
@@ -86,7 +87,7 @@ def run_cashflow_analysis(product_id, invocation_id, state):
         raise e
 
 
-def run_segment_roi(product_id, product_research, invocation_id, state):
+def run_segment_roi(product_id: str, product_research: Any, invocation_id: str, state: Any) -> Any:
     """Run segmentwise ROI analysis step"""
     segment_roi_input = {
         "product_id": product_id,
@@ -105,7 +106,7 @@ def run_segment_roi(product_id, product_research, invocation_id, state):
         raise e
 
 
-def run_pricing_analysis(product_id, invocation_id, state):
+def run_pricing_analysis(product_id: str, invocation_id: str, state: Any) -> Any:
     """Run pricing analysis step"""
     pricing_analysis_input = {
         "product_id": product_id
@@ -123,7 +124,7 @@ def run_pricing_analysis(product_id, invocation_id, state):
         raise e
 
 
-def run_positioning_analysis(product_id, experimental_pricing_research, iteration, invocation_id, state):
+def run_positioning_analysis(product_id: str, experimental_pricing_research: Any, iteration: int, invocation_id: str, state: Any) -> Any:
     """Run positioning analysis for iterative loop"""
     positioning_input = {
         "product_id": product_id,
@@ -139,7 +140,7 @@ def run_positioning_analysis(product_id, experimental_pricing_research, iteratio
     return result
 
 
-def run_persona_simulation(product_id, experimental_pricing_research, iteration, invocation_id, state):
+def run_persona_simulation(product_id: str, experimental_pricing_research: Any, iteration: int, invocation_id: str, state: Any) -> Any:
     """Run persona simulation for iterative loop"""
     persona_input = {
         "product_id": product_id,
@@ -155,7 +156,7 @@ def run_persona_simulation(product_id, experimental_pricing_research, iteration,
     return result
 
 
-def run_iterative_loop(product_id, invocation_id, state):
+def run_iterative_loop(product_id: str, invocation_id: str, state: Any) -> None:
     """Run the iterative refinement loop with positioning analysis, persona simulation, and cashflow refinement"""
     max_retries = state.max_iterations
     
@@ -232,7 +233,7 @@ def run_iterative_loop(product_id, invocation_id, state):
                 break
 
 
-def final_agent(product_id, usage_scope=None, customer_segment_id=None, pricing_objective=None):
+def final_agent(product_id: str, usage_scope: Optional[str] = None, customer_segment_id: Optional[str] = None, pricing_objective: Optional[str] = None) -> Any:
     # Initialize orchestration state
     invocation_id = str(uuid.uuid4())
     state = OrchestrationState(
@@ -423,7 +424,7 @@ def final_agent(product_id, usage_scope=None, customer_segment_id=None, pricing_
         return state
 
 
-def display_pricing_recommendations(pricing_response: RecommendedPricingModelResponse):
+def display_pricing_recommendations(pricing_response: RecommendedPricingModelResponse) -> None:
     """Display pricing recommendations in a formatted way"""
     try:
         lines = []

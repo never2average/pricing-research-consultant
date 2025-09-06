@@ -1,16 +1,17 @@
 import os
 import json
+from typing import Optional, List, Dict, Any, Tuple, Union
 from mongoengine import connect
 
 from datastore.models import Product, ProductPricingModel, CustomerSegment, PricingPlanSegmentContribution, CustomerUsageAnalysis, ProductPricingMapping, OrchestrationResult, Competitors
 
 
 
-def connect_db():
+def connect_db() -> None:
     mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/pricing-research")
     connect(host=mongo_uri, alias="default")
 
-def normalize_collection_name(name):
+def normalize_collection_name(name: Optional[str]) -> Optional[str]:
     if not name:
         return None
     s = name.strip().lower().replace("_", "").replace("-", "")
@@ -30,7 +31,7 @@ MODEL_MAP = {
 }
 
 
-def create_pricing_plan_segment_contribution(product, segment, pricing_model, d=None):
+def create_pricing_plan_segment_contribution(product: Any, segment: Any, pricing_model: Any, d: Optional[Dict[str, Any]] = None) -> Any:
     number_active = 0
     number_forecast = 0
     if d:
@@ -56,7 +57,7 @@ def create_pricing_plan_segment_contribution(product, segment, pricing_model, d=
     return contribution
 
 
-def create_product_from_dict(d):
+def create_product_from_dict(d: Dict[str, Any]) -> Any:
     competitors_data = d.get("competitors", []) or []
     competitors_list = []
     for c in competitors_data:
@@ -84,7 +85,7 @@ def create_product_from_dict(d):
     return product
 
 
-def create_pricing_model_from_dict(d):
+def create_pricing_model_from_dict(d: Dict[str, Any]) -> Any:
     pricing_model = ProductPricingModel(
         plan_name=d.get("plan_name", ""),
         unit_price=float(d.get("unit_price", 99.0)),
@@ -96,7 +97,7 @@ def create_pricing_model_from_dict(d):
     return pricing_model
 
 
-def create_customer_segment_from_dict(product, d):
+def create_customer_segment_from_dict(product: Any, d: Dict[str, Any]) -> Any:
     segment = CustomerSegment(
         product=product,
         customer_segment_uid=d.get("customer_segment_uid"),
@@ -107,7 +108,7 @@ def create_customer_segment_from_dict(product, d):
     return segment
 
 
-def create_customer_usage_analysis_from_dict(product, segment, d):
+def create_customer_usage_analysis_from_dict(product: Any, segment: Any, d: Dict[str, Any]) -> Any:
     usage = CustomerUsageAnalysis(
         product=product,
         customer_segment=segment,
@@ -120,7 +121,7 @@ def create_customer_usage_analysis_from_dict(product, segment, d):
     return usage
 
 
-def create_product_pricing_mapping(product, pricing_model, is_active="true"):
+def create_product_pricing_mapping(product: Any, pricing_model: Any, is_active: str = "true") -> Any:
     mapping = ProductPricingMapping(
         product=product,
         pricing_model=pricing_model,
@@ -130,7 +131,7 @@ def create_product_pricing_mapping(product, pricing_model, is_active="true"):
     return mapping
 
 
-def create_from_json_file(path):
+def create_from_json_file(path: str) -> Tuple[Any, List[Any], List[Any]]:
     with open(path, "r") as f:
         payload = json.load(f)
 
@@ -177,7 +178,7 @@ def create_from_json_file(path):
 
     return product, created_pricing_models, created_segments
 
-def delete_one(collection_name, doc_id):
+def delete_one(collection_name: str, doc_id: str) -> bool:
     key = normalize_collection_name(collection_name)
     Model = MODEL_MAP.get(key)
     if not Model:
@@ -187,7 +188,7 @@ def delete_one(collection_name, doc_id):
     return True
 
 
-def delete_many(collection_name, ids):
+def delete_many(collection_name: str, ids: List[str]) -> Dict[str, Any]:
     key = normalize_collection_name(collection_name)
     Model = MODEL_MAP.get(key)
     if not Model:
@@ -206,7 +207,7 @@ def delete_many(collection_name, ids):
     return {"deleted": deleted, "requested": len(ids), "errors": errors}
 
 
-def get_one(collection_name, doc_id):
+def get_one(collection_name: str, doc_id: str) -> Any:
     key = normalize_collection_name(collection_name)
     Model = MODEL_MAP.get(key)
     if not Model:
@@ -214,7 +215,7 @@ def get_one(collection_name, doc_id):
     return Model.objects.get(id=doc_id)
 
 
-def list_all_ids(collection_name):
+def list_all_ids(collection_name: str) -> List[str]:
     key = normalize_collection_name(collection_name)
     Model = MODEL_MAP.get(key)
     if not Model:
@@ -223,7 +224,7 @@ def list_all_ids(collection_name):
     return [str(d.id) for d in docs]
 
 
-def _to_plain_value(v):
+def _to_plain_value(v: Any) -> str:
     try:
         if isinstance(v, (dict, list)):
             return json.dumps(v, ensure_ascii=False)
@@ -235,7 +236,7 @@ def _to_plain_value(v):
             return ""
 
 
-def document_to_markdown_table(obj):
+def document_to_markdown_table(obj: Any) -> str:
     try:
         data = obj.to_mongo().to_dict()
     except Exception:
@@ -253,7 +254,7 @@ def document_to_markdown_table(obj):
     return "\n".join(lines)
 
 
-def list_one_markdown(collection_name, doc_id):
+def list_one_markdown(collection_name: str, doc_id: str) -> str:
     obj = get_one(collection_name, doc_id)
     key = normalize_collection_name(collection_name)
     if key == "product":
@@ -261,7 +262,7 @@ def list_one_markdown(collection_name, doc_id):
     return document_to_markdown_table(obj)
 
 
-def list_all_markdown(collection_name):
+def list_all_markdown(collection_name: str) -> str:
     ids = list_all_ids(collection_name)
     norm = normalize_collection_name(collection_name) or collection_name
     lines = []
@@ -272,7 +273,7 @@ def list_all_markdown(collection_name):
     return "\n".join(lines)
 
 
-def list_product_related_markdown(product):
+def list_product_related_markdown(product: Any) -> str:
     try:
         segs = list(CustomerSegment.objects(product=product))
     except Exception:
