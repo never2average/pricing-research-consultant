@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from routes.experiments import router as experiments_router
+from concurrent.futures import ThreadPoolExecutor
 from routes.deployment import router as deployment_router
+from routes.experiments import router as experiments_router
 
 thread_pool = ThreadPoolExecutor(max_workers=4)
 
