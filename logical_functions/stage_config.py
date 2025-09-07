@@ -16,7 +16,7 @@ def get_stage_mapping():
             "request_stage": "segments_loaded"
         },
         "positioning_usage_analysis_done": {
-            "orchestrator": [product_orchestrator, competitor_orchestrator],
+            "orchestrator": [product_orchestrator, competitor_orchestrator, marketing_orchestrator],
             "next_stage": "roi_gap_analyzer_run",
             "request_stage": "positioning_usage_analysis_done"
         },
@@ -37,13 +37,8 @@ def get_stage_mapping():
         },
         "scenario_builder_completed": {
             "orchestrator": scenario_orchestrator,
-            "next_stage": "marketing_analysis_completed", 
-            "request_stage": "scenario_builder_completed"
-        },
-        "marketing_analysis_completed": {
-            "orchestrator": marketing_orchestrator,
             "next_stage": "cashflow_feasibility_runs_completed",
-            "request_stage": "marketing_analysis_completed"
+            "request_stage": "scenario_builder_completed"
         },
         "cashflow_feasibility_runs_completed": {
             "orchestrator": cashflow_orchestrator,
@@ -60,6 +55,5 @@ def get_stage_order():
         "experimental_plan_generated",
         "simulations_run",
         "scenario_builder_completed",
-        "marketing_analysis_completed",
         "cashflow_feasibility_runs_completed"
     ]

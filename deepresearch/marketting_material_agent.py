@@ -95,7 +95,7 @@ async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]
         else:
             experiments[idx].positioning_summary = result.get("positioning_summary")
             experiments[idx].usage_summary = result.get("usage_summary")
-        experiments[idx].experiment_gen_stage = ExperimentGenStage.MARKETING_ANALYSIS_COMPLETED
+        experiments[idx].experiment_gen_stage = ExperimentGenStage.POSITIONING_USAGE_ANALYSIS_DONE
     return experiments
 
 
