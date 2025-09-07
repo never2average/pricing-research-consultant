@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 from typing import List
 from datastore.types import PricingExperimentPydantic, ExperimentGenStage, TsObjectPydantic
@@ -141,21 +142,94 @@ Compare all 3 simulations and recommend which scenario to use for planning and d
 async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
     tasks = [invoke_agent(experiment) for experiment in experiments]
     results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    result_experiments = []
 
     for idx, result in enumerate(results):
-        if isinstance(result, Exception):
-            experiments[idx].simulation_result = f"Error running simulations: {str(result)}"
-        else:
-            if isinstance(result, dict):
-                experiments[idx].simulation_result = json.dumps(result.get("simulation_result", result), indent=2)
-                experiments[idx].usage_projections = result.get("usage_projections", [])
-                experiments[idx].revenue_projections = result.get("revenue_projections", [])
-            else:
-                experiments[idx].simulation_result = str(result)
+        original_experiment = experiments[idx]
         
-        experiments[idx].experiment_gen_stage = ExperimentGenStage.SIMULATIONS_RUN
+        if isinstance(result, Exception):
+            # On error, create one experiment with error info
+            error_experiment = copy.deepcopy(original_experiment)
+            error_experiment.simulation_result = f"Error running simulations: {str(result)}"
+            error_experiment.experiment_gen_stage = ExperimentGenStage.SIMULATIONS_RUN
+            result_experiments.append(error_experiment)
+        else:
+            if isinstance(result, dict) and "simulation_result" in result:
+                simulation_data = result["simulation_result"]
+                
+                # Create separate experiments for each of the 3 scenarios
+                scenarios = ["simulation_1_conservative", "simulation_2_realistic", "simulation_3_optimistic"]
+                scenario_names = ["Conservative", "Realistic", "Optimistic"]
+                
+                for scenario_key, scenario_name in zip(scenarios, scenario_names):
+                    if scenario_key in simulation_data:
+                        new_experiment = copy.deepcopy(original_experiment)
+                        
+                        # Create focused simulation result for this scenario
+                        focused_simulation = {
+                            "scenario_name": scenario_name,
+                            "scenario_type": scenario_key,
+                            "scenario_data": simulation_data[scenario_key],
+                            "simulation_summary": simulation_data.get("simulation_summary", ""),
+                            "comparative_analysis": simulation_data.get("comparative_analysis", ""),
+                            "recommendation_summary": simulation_data.get("recommendation_summary", "")
+                        }
+                        
+                        new_experiment.simulation_result = json.dumps(focused_simulation, indent=2)
+                        
+                        # Extract projections specific to this scenario if available
+                        scenario_data = simulation_data[scenario_key]
+                        if isinstance(scenario_data, dict) and "monthly_forecasts" in scenario_data:
+                            usage_projections = []
+                            revenue_projections = []
+                            base_date = datetime.now()
+                            
+                            forecasts = scenario_data["monthly_forecasts"]
+                            if isinstance(forecasts, list):
+                                for i, forecast in enumerate(forecasts[:12]):  # Limit to 12 months
+                                    target_date = base_date + timedelta(days=30 * i)
+                                    
+                                    if isinstance(forecast, dict):
+                                        if "usage" in forecast:
+                                            usage_projections.append(TsObjectPydantic(
+                                                usage_value_in_units=forecast["usage"],
+                                                usage_unit=f"{scenario_name.lower()}_scenario_units",
+                                                target_date=target_date
+                                            ))
+                                        if "revenue" in forecast:
+                                            revenue_projections.append(TsObjectPydantic(
+                                                usage_value_in_units=forecast["revenue"],
+                                                usage_unit=f"{scenario_name.lower()}_scenario_revenue_usd",
+                                                target_date=target_date
+                                            ))
+                            
+                            new_experiment.usage_projections = usage_projections
+                            new_experiment.revenue_projections = revenue_projections
+                        else:
+                            # Fallback to original projections if scenario-specific ones aren't available
+                            new_experiment.usage_projections = result.get("usage_projections", [])
+                            new_experiment.revenue_projections = result.get("revenue_projections", [])
+                        
+                        new_experiment.experiment_gen_stage = ExperimentGenStage.SIMULATIONS_RUN
+                        result_experiments.append(new_experiment)
+                
+                # If no scenarios found, create fallback experiment
+                if not any(scenario in simulation_data for scenario in scenarios):
+                    fallback_experiment = copy.deepcopy(original_experiment)
+                    fallback_experiment.simulation_result = json.dumps(result.get("simulation_result", result), indent=2)
+                    fallback_experiment.usage_projections = result.get("usage_projections", [])
+                    fallback_experiment.revenue_projections = result.get("revenue_projections", [])
+                    fallback_experiment.experiment_gen_stage = ExperimentGenStage.SIMULATIONS_RUN
+                    result_experiments.append(fallback_experiment)
+            else:
+                # Handle non-dict results
+                fallback_experiment = copy.deepcopy(original_experiment)
+                fallback_experiment.simulation_result = str(result)
+                fallback_experiment.experiment_gen_stage = ExperimentGenStage.SIMULATIONS_RUN
+                result_experiments.append(fallback_experiment)
     
-    return experiments
+    return result_experiments
 
 
 def invoke_orchestrator(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
