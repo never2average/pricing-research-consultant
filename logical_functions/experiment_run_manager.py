@@ -32,7 +32,7 @@ def create_experiment_run(experiment_request: PricingExperimentRequest, updated_
         new_run.usage_projections = data.usage_projections if hasattr(data, 'usage_projections') else None
         new_run.revenue_projections = data.revenue_projections if hasattr(data, 'revenue_projections') else None
         new_run.experiment_feedback_summary = data.experiment_feedback_summary if hasattr(data, 'experiment_feedback_summary') else None
-        new_run.relevant_segments = data.relevant_segments if hasattr(data, 'relevant_segments') else None
+        new_run.relevant_segment = data.relevant_segment if hasattr(data, 'relevant_segment') else None
         new_run.cashflow_no_negative_impact_approval_given = data.cashflow_no_negative_impact_approval_given if hasattr(data, 'cashflow_no_negative_impact_approval_given') else None
         new_run.experiment_is_deployed = data.experiment_is_deployed if hasattr(data, 'experiment_is_deployed') else None
         new_run.experiment_deployed_on = data.experiment_deployed_on if hasattr(data, 'experiment_deployed_on') else None

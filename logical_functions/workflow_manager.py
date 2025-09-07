@@ -70,19 +70,15 @@ def start_experiment_workflow(experiment_request: PricingExperimentRequest):
             except Exception as stage_error:
                 print(f"Error in stage {stage} for experiment {experiment_request.experiment_number}: {str(stage_error)}")
                 
-                experiment_request.experiment_gen_stage = f"{stage}_failed"
-                experiment_request.save()
-                
-                if current_run:
-                    current_run.experiment_gen_stage = f"{stage}_failed"
-                    current_run.save()
+                # Keep the current stage instead of setting invalid failed stage
+                print(f"Workflow failed at stage {stage}: {str(stage_error)}")
                     
                 raise Exception(f"Workflow failed at stage {stage}: {str(stage_error)}")
                 
     except Exception as e:
         print(f"Critical error in workflow for experiment {experiment_request.experiment_number}: {str(e)}")
         
-        experiment_request.experiment_gen_stage = "failed"
-        experiment_request.save()
+        # Don't try to set invalid stage names
+        print(f"Experiment {experiment_request.experiment_number} failed")
         
         raise

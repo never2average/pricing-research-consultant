@@ -3,16 +3,16 @@ from datastore.models import PricingExperimentRuns
 
 def convert_to_pydantic(experiment_run: PricingExperimentRuns):
     segments = []
-    if experiment_run.relevant_segments:
-        for seg in experiment_run.relevant_segments:
-            segments.append({
-                "segment_name": seg.segment_name,
-                "segment_cdp_uid": seg.segment_cdp_uid,
-                "segment_description": seg.segment_description,
-                "segment_filter_logic": seg.segment_filter_logic,
-                "segment_usage_summary": seg.segment_usage_summary,
-                "segment_revenue_attribution_summary": seg.segment_revenue_attribution_summary
-            })
+    if experiment_run.relevant_segment:
+        seg = experiment_run.relevant_segment
+        segments.append({
+            "segment_name": seg.segment_name,
+            "segment_cdp_uid": seg.segment_cdp_uid,
+            "segment_description": seg.segment_description,
+            "segment_filter_logic": seg.segment_filter_logic,
+            "segment_usage_summary": seg.segment_usage_summary,
+            "segment_revenue_attribution_summary": seg.segment_revenue_attribution_summary
+        })
     
     product_data = {}
     if experiment_run.experiment_request.product:
