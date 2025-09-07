@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from datastore.models import CustomerSegment
 from utils.openai_client import get_openai_client
-from datastore.types import PricingExperimentPydantic
+from datastore.types import PricingExperimentPydantic, ExperimentGenStage
 from utils.litellm_instructor_client import get_litellm_instructor_client
 
 
@@ -54,6 +54,7 @@ CONTEXT
 - Product Description: {pricing_experiment.product.product_description if pricing_experiment.product else 'Not provided'}
 - Product Industry: {pricing_experiment.product.product_industry if pricing_experiment.product else 'Not specified'}
 - Product ICP Summary: {pricing_experiment.product.product_icp_summary if pricing_experiment.product else 'Not provided'}
+- Product Seed Context: {pricing_experiment.product_seed_context if pricing_experiment.product_seed_context else 'Not provided'}
 - Experiment Objective: {pricing_experiment.objective}
 - Use Case/Rationale: {pricing_experiment.usecase}
 
@@ -110,6 +111,7 @@ async def invoke_orchestrator(experiments: List[PricingExperimentPydantic]) -> L
         for segment in selected_segments:
             new_experiment = copy.deepcopy(experiment)
             new_experiment.relevant_segment = segment.segment_usage_summary
+            new_experiment.experiment_gen_stage = ExperimentGenStage.SEGMENTS_LOADED
             result_experiments.append(new_experiment)
         
     return result_experiments

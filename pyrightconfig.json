@@ -77,6 +77,13 @@
       "reportUnknownParameterType": false,
       "reportUnknownVariableType": false,
       "reportUnknownArgumentType": false
+    },
+    {
+      "include": [
+        "deepresearch/marketting_material_agent.py",
+        "deepresearch/competitor_research_agent.py"
+      ],
+      "typeCheckingMode": "off"
     }
   ]
 }

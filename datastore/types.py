@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 
 
 class TsObjectPydantic(BaseModel):
@@ -42,10 +43,23 @@ class ProductPydantic(BaseModel):
 
 
 
+class ExperimentGenStage(Enum):
+    PRODUCT_CONTEXT_INITIALIZED = "product_context_initialized"
+    SEGMENTS_LOADED = "segments_loaded"
+    POSITIONING_USAGE_ANALYSIS_DONE = "positioning_usage_analysis_done"
+    ROI_GAP_ANALYZER_RUN = "roi_gap_analyzer_run"
+    EXPERIMENTAL_PLAN_GENERATED = "experimental_plan_generated"
+    SIMULATIONS_RUN = "simulations_run"
+    SCENARIO_BUILDER_COMPLETED = "scenario_builder_completed"
+    CASHFLOW_FEASIBILITY_RUNS_COMPLETED = "cashflow_feasibility_runs_completed"
+    COMPLETED = "completed"
+    DEPLOYED = "deployed"
+    FEEDBACK_COLLECTED = "feedback_collected"
+
 class PricingExperimentPydantic(BaseModel):
     product: Optional[ProductPydantic] = None
     experiment_number: Optional[int] = None
-    experiment_gen_stage: Optional[str] = None
+    experiment_gen_stage: Optional[ExperimentGenStage] = None
     objective: Optional[str] = None
     usecase: Optional[str] = None
     product_seed_context: Optional[str]=None

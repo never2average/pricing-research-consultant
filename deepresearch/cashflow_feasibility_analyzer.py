@@ -1,16 +1,143 @@
+import asyncio
+import json
 from typing import List
-from datastore.types import PricingExperimentPydantic
+from datastore.types import PricingExperimentPydantic, ExperimentGenStage
 from utils.openai_client import get_openai_client
 
 
-def invoke_agent():
+async def invoke_agent(pricing_experiment: PricingExperimentPydantic):
     client = get_openai_client()
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": "Your input prompt here"}]
+    
+    system_prompt = """
+You are a financial analyst specializing in cash flow analysis for pricing experiments. Assess the financial feasibility and cash flow impact of proposed pricing changes.
+
+CASH FLOW ANALYSIS FRAMEWORK:
+1. Revenue Impact Analysis - Changes in top-line revenue streams
+2. Cost Structure Analysis - Impact on variable and fixed costs
+3. Working Capital Analysis - Changes in payment terms, collections, inventory
+4. Investment Requirements - Infrastructure, systems, personnel needs
+5. Risk Assessment - Financial risks and mitigation strategies
+6. Break-even Analysis - Time to positive cash flow impact
+7. Sensitivity Analysis - Impact of key assumptions on cash flow
+
+FINANCIAL METRICS TO EVALUATE:
+- Monthly cash flow projections for 12-24 months
+- Break-even timeline and customer acquisition requirements
+- Net present value (NPV) of the pricing change
+- Internal rate of return (IRR) on required investments
+- Cash flow at risk (CFaR) under different scenarios
+- Working capital requirements and financing needs
+
+OUTPUT FORMAT:
+Provide structured JSON with these exact keys:
+- cash_flow_summary: Executive summary of financial impact
+- monthly_projections: Month-by-month cash flow estimates
+- break_even_analysis: Time and conditions to reach break-even
+- investment_requirements: Upfront and ongoing investment needs
+- risk_assessment: Financial risks and probability-weighted impacts
+- sensitivity_analysis: Key variables that most affect cash flow
+- financing_needs: Any external financing requirements
+- approval_recommendation: Go/No-go recommendation with rationale
+- key_assumptions: Critical financial assumptions made
+
+REQUIREMENTS:
+- Provide specific dollar amounts and timeframes
+- Include confidence intervals for key projections
+- Consider both optimistic and conservative scenarios
+- Account for implementation costs and operational changes
+- Flag any cash flow risks that require immediate attention
+"""
+
+    product_name = pricing_experiment.product.product_name if pricing_experiment.product else "Unknown Product"
+    experimental_plan = pricing_experiment.experimental_pricing_plan or "No pricing plan available"
+    simulation_result = pricing_experiment.simulation_result or "No simulation data available"
+    usage_projections = pricing_experiment.usage_projections or []
+    revenue_projections = pricing_experiment.revenue_projections or []
+    objective = pricing_experiment.objective or "Not specified"
+    usecase = pricing_experiment.usecase or "Not specified"
+
+    user_prompt = f"""
+CONTEXT:
+Product: {product_name}
+Experiment Objective: {objective}  
+Use Case: {usecase}
+
+EXPERIMENTAL PRICING PLAN:
+{experimental_plan}
+
+SIMULATION RESULTS:
+{simulation_result}
+
+USAGE PROJECTIONS:
+{json.dumps([{"value": proj.usage_value_in_units, "unit": proj.usage_unit, "date": proj.target_date.isoformat() if proj.target_date else None} for proj in usage_projections], indent=2) if usage_projections else "No usage projections available"}
+
+REVENUE PROJECTIONS:
+{json.dumps([{"value": proj.usage_value_in_units, "unit": proj.usage_unit, "date": proj.target_date.isoformat() if proj.target_date else None} for proj in revenue_projections], indent=2) if revenue_projections else "No revenue projections available"}
+
+TASK:
+Conduct a comprehensive cash flow feasibility analysis for the proposed pricing experiment. Evaluate the financial viability, cash flow impact, and investment requirements.
+
+Focus on:
+1. Monthly cash flow projections with confidence intervals
+2. Break-even timeline and requirements
+3. Investment needs and financing requirements  
+4. Risk factors that could impact cash flow
+5. Clear go/no-go recommendation with financial rationale
+
+Provide specific financial metrics and highlight any cash flow concerns that need immediate attention.
+"""
+
+    response = await client.responses.create(
+        model="gpt-5",
+        instructions=system_prompt,
+        input=user_prompt,
+        reasoning={"effort": "high"},
+        max_output_tokens=4000,
+        truncation="auto"
     )
-    return response.choices[0].message.content
+
+    output_text = response.output_text or ""
+    
+    try:
+        parsed_result = json.loads(output_text)
+        
+        approval_recommendation = parsed_result.get("approval_recommendation", "")
+        no_negative_impact = False
+        if isinstance(approval_recommendation, str):
+            no_negative_impact = "go" in approval_recommendation.lower() or "recommend" in approval_recommendation.lower()
+        elif isinstance(approval_recommendation, dict):
+            no_negative_impact = approval_recommendation.get("recommendation", "").lower() in ["go", "proceed", "approve"]
+        
+        return {
+            "cashflow_analysis": parsed_result,
+            "no_negative_impact_approval": no_negative_impact
+        }
+        
+    except json.JSONDecodeError:
+        return {"cashflow_analysis": output_text, "parsing_error": "Could not parse structured output"}
+
+
+async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
+    tasks = [invoke_agent(experiment) for experiment in experiments]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for idx, result in enumerate(results):
+        if isinstance(result, Exception):
+            experiments[idx].cashflow_feasibility_comments = f"Error in cash flow analysis: {str(result)}"
+            experiments[idx].cashflow_no_negative_impact_approval_given = False
+        else:
+            if isinstance(result, dict):
+                cashflow_data = result.get("cashflow_analysis", result)
+                experiments[idx].cashflow_feasibility_comments = json.dumps(cashflow_data, indent=2)
+                experiments[idx].cashflow_no_negative_impact_approval_given = result.get("no_negative_impact_approval", False)
+            else:
+                experiments[idx].cashflow_feasibility_comments = str(result)
+                experiments[idx].cashflow_no_negative_impact_approval_given = False
+        
+        experiments[idx].experiment_gen_stage = ExperimentGenStage.CASHFLOW_FEASIBILITY_RUNS_COMPLETED
+    
+    return experiments
 
 
 def invoke_orchestrator(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
-    return experiments
+    return asyncio.run(invoke_orchestrator_async(experiments))
