@@ -12,11 +12,7 @@ def _build_vector_store_ids(pricing_experiment: PricingExperimentPydantic):
     ids = []
     if pricing_experiment and pricing_experiment.product:
         ids.extend([
-            pricing_experiment.product.product_marketing_docs_vs_id,
-            pricing_experiment.product.product_feature_docs_vs_id,
-            pricing_experiment.product.product_categories_vs_id,
-            pricing_experiment.product.product_usage_docs_vs_id,
-            pricing_experiment.product.product_technical_docs_vs_id,
+            pricing_experiment.product.product_marketing_docs_vs_id
         ])
         competitor = getattr(pricing_experiment.product, "product_competitors", None)
         if competitor and getattr(competitor, "competitor_vs_id", None):
