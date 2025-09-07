@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import json
 from typing import List
 from datastore.types import PricingExperimentPydantic, ExperimentGenStage
 from utils.openai_client import get_openai_client
@@ -78,14 +77,7 @@ Focus on segment-specific insights that differentiate this analysis from generic
         max_output_tokens=3000,
         truncation="auto"
     )
-
-    output_text = response.output_text or ""
-    
-    try:
-        parsed_result = json.loads(output_text)
-        return parsed_result
-    except json.JSONDecodeError:
-        return {"roi_analysis": output_text, "parsing_error": "Could not parse structured output"}
+    return response.output_text
 
 
 async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
@@ -118,14 +110,14 @@ async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]
                     gap_focused_result["focused_gap"] = gap
                     gap_focused_result["gap_priority"] = gap_idx + 1  # 1, 2, or 3
                     
-                    new_experiment.roi_gaps = json.dumps(gap_focused_result, indent=2)
+                    new_experiment.roi_gaps = gap_focused_result
                     new_experiment.experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
                     result_experiments.append(new_experiment)
                 
                 # If we don't have any gaps, create at least one experiment
                 if len(gaps_data) == 0:
                     fallback_experiment = copy.deepcopy(original_experiment)
-                    fallback_experiment.roi_gaps = json.dumps(result, indent=2)
+                    fallback_experiment.roi_gaps = result
                     fallback_experiment.experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
                     result_experiments.append(fallback_experiment)
             else:

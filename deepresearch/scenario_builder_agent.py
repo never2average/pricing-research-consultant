@@ -1,5 +1,4 @@
 import asyncio
-import json
 from typing import List
 from datastore.types import PricingExperimentPydantic, ExperimentGenStage
 from utils.openai_client import get_openai_client
@@ -89,14 +88,7 @@ Focus on actionable contingency playbooks with specific trigger points and respo
         max_output_tokens=4000,
         truncation="auto"
     )
-
-    output_text = response.output_text or ""
-    
-    try:
-        parsed_result = json.loads(output_text)
-        return parsed_result
-    except json.JSONDecodeError:
-        return {"scenario_analysis": output_text, "parsing_error": "Could not parse structured output"}
+    return response.output_text
 
 
 async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:

@@ -42,6 +42,66 @@ class ProductPydantic(BaseModel):
     product_competitors: Optional[CompetitorsPydantic] = None
 
 
+class MonthlyProjection(BaseModel):
+    month: str
+    conservative_estimate: Optional[float] = None
+    realistic_estimate: Optional[float] = None
+    optimistic_estimate: Optional[float] = None
+    confidence_interval_lower: Optional[float] = None
+    confidence_interval_upper: Optional[float] = None
+
+
+class BreakEvenAnalysis(BaseModel):
+    conservative_break_even_months: Optional[int] = None
+    realistic_break_even_months: Optional[int] = None
+    optimistic_break_even_months: Optional[int] = None
+    customer_acquisition_required: Optional[int] = None
+    break_even_conditions: Optional[str] = None
+
+
+class InvestmentRequirements(BaseModel):
+    upfront_investment: Optional[float] = None
+    ongoing_monthly_costs: Optional[float] = None
+    infrastructure_costs: Optional[float] = None
+    personnel_costs: Optional[float] = None
+    system_costs: Optional[float] = None
+    total_investment_12_months: Optional[float] = None
+
+
+class RiskAssessment(BaseModel):
+    high_risk_factors: Optional[List[str]] = None
+    medium_risk_factors: Optional[List[str]] = None
+    low_risk_factors: Optional[List[str]] = None
+    financial_risk_amount: Optional[float] = None
+    risk_mitigation_strategies: Optional[List[str]] = None
+
+
+class SensitivityAnalysis(BaseModel):
+    key_variables: Optional[List[str]] = None
+    customer_acquisition_impact: Optional[str] = None
+    pricing_sensitivity: Optional[str] = None
+    market_response_impact: Optional[str] = None
+
+
+class FinancingNeeds(BaseModel):
+    external_financing_required: Optional[bool] = None
+    financing_amount: Optional[float] = None
+    financing_timeline: Optional[str] = None
+    recommended_financing_type: Optional[str] = None
+
+
+class CashflowAnalysisResult(BaseModel):
+    cash_flow_summary: Optional[str] = None
+    monthly_projections: Optional[List[MonthlyProjection]] = None
+    break_even_analysis: Optional[BreakEvenAnalysis] = None
+    investment_requirements: Optional[InvestmentRequirements] = None
+    risk_assessment: Optional[RiskAssessment] = None
+    sensitivity_analysis: Optional[SensitivityAnalysis] = None
+    financing_needs: Optional[FinancingNeeds] = None
+    approval_recommendation: Optional[str] = None
+    key_assumptions: Optional[List[str]] = None
+
+
 
 class ExperimentGenStage(Enum):
     PRODUCT_CONTEXT_INITIALIZED = "product_context_initialized"
