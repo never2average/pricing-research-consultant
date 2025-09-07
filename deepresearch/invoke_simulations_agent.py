@@ -10,41 +10,40 @@ async def invoke_agent(pricing_experiment: PricingExperimentPydantic):
     client = get_openai_client()
     
     system_prompt = """
-You are a pricing simulation expert. Run comprehensive simulations of pricing experiments to predict outcomes across multiple scenarios.
+You are a pricing simulation expert. Run exactly 3 DISTINCT simulations of the pricing experiment to predict outcomes across different scenarios.
 
-SIMULATION FRAMEWORK:
-1. Baseline Model - Current state revenue and usage patterns
-2. Experimental Scenarios - Test different pricing parameters and market conditions  
-3. Sensitivity Analysis - How changes in key variables affect outcomes
-4. Risk Scenarios - Downside cases and their probabilities
-5. Time-series Projections - Monthly forecasts over simulation period
-6. Statistical Confidence - Probability ranges for key outcomes
+REQUIRED 3 SIMULATIONS:
+1. CONSERVATIVE SCENARIO - Lower adoption, higher churn, conservative market response
+2. REALISTIC SCENARIO - Most likely outcomes based on market data and trends
+3. OPTIMISTIC SCENARIO - Higher adoption, lower churn, favorable market conditions
 
-SIMULATION COMPONENTS:
-- Customer behavior modeling (adoption, churn, expansion)
-- Revenue impact projections with confidence intervals
-- Usage pattern changes under new pricing
-- Competitive response scenarios
-- Market penetration curves
-- Customer lifetime value impacts
+SIMULATION FRAMEWORK FOR EACH:
+1. Customer Behavior Modeling - Adoption rates, churn patterns, usage expansion
+2. Revenue Impact Projections - Monthly revenue changes with confidence intervals
+3. Market Dynamics - Competitive responses and market penetration
+4. Risk Factors - Specific risks and their probability-weighted impacts
+5. Time-series Forecasts - 12-month projections for key metrics
 
 OUTPUT FORMAT:
 Provide structured JSON with these exact keys:
-- simulation_scenarios: List of scenarios tested with parameters
-- baseline_projections: Current state projections for comparison
-- experimental_projections: Results under new pricing for each scenario
-- sensitivity_analysis: Key factors that most impact outcomes  
-- risk_assessment: Downside scenarios and their likelihood
-- confidence_intervals: Statistical ranges for revenue/usage projections
-- monthly_forecasts: Time-series data for next 12 months
-- recommendation_summary: Key insights and recommended next steps
+- simulation_summary: Overview of the 3 simulation approach
+- simulation_1_conservative: Complete analysis for conservative scenario with:
+  * scenario_name: "Conservative"
+  * key_assumptions: List of conservative assumptions
+  * monthly_forecasts: 12-month revenue/usage projections
+  * risk_factors: Specific risks in this scenario
+  * success_probability: Likelihood of achieving targets
+- simulation_2_realistic: Complete analysis for realistic scenario with same structure
+- simulation_3_optimistic: Complete analysis for optimistic scenario with same structure
+- comparative_analysis: Side-by-side comparison of the 3 scenarios
+- recommendation_summary: Which scenario to plan for and why
 
 REQUIREMENTS:
-- Include optimistic, realistic, and pessimistic scenarios
-- Provide specific numbers with confidence ranges
-- Model customer segments separately where relevant
-- Account for seasonality and market trends
-- Include both financial and operational impact metrics
+- Each simulation must have distinct assumptions and parameters
+- Provide specific numbers with confidence ranges for all 3
+- Include 12-month monthly forecasts for each scenario
+- Explain key differences between the scenarios
+- Recommend which scenario to use for planning purposes
 """
 
     product_name = pricing_experiment.product.product_name if pricing_experiment.product else "Unknown Product"
@@ -64,17 +63,20 @@ EXPERIMENTAL PRICING PLAN:
 {experimental_plan}
 
 TASK:
-Run comprehensive simulations of the proposed pricing experiment. Model multiple scenarios including optimistic, realistic, and pessimistic cases. 
+Run exactly 3 DISTINCT simulations of the proposed pricing experiment:
 
-Provide detailed projections for:
-1. Revenue impact over 12 months
-2. Usage pattern changes
-3. Customer behavior responses
-4. Market penetration effects
-5. Competitive dynamics
-6. Risk factors and mitigation needs
+1. CONSERVATIVE SIMULATION: Model cautious adoption, higher churn, slower growth
+2. REALISTIC SIMULATION: Model most likely outcomes based on historical data  
+3. OPTIMISTIC SIMULATION: Model favorable conditions, strong adoption, lower churn
 
-Include specific monthly forecasts and confidence intervals for all key metrics.
+For EACH simulation, provide:
+- Specific assumptions and parameters
+- 12-month revenue and usage projections
+- Key risk factors and mitigation strategies
+- Success probability and confidence intervals
+- Monthly forecasts with different growth trajectories
+
+Compare all 3 simulations and recommend which scenario to use for planning and decision-making.
 """
 
     response = await client.responses.create(
@@ -93,29 +95,38 @@ Include specific monthly forecasts and confidence intervals for all key metrics.
         
         usage_projections = []
         revenue_projections = []
+        base_date = datetime.now()
         
-        if "monthly_forecasts" in parsed_result:
-            forecasts = parsed_result["monthly_forecasts"]
-            base_date = datetime.now()
-            
-            for i in range(12):
-                target_date = base_date + timedelta(days=30 * i)
-                
-                if isinstance(forecasts, list) and i < len(forecasts):
-                    forecast = forecasts[i]
-                    if isinstance(forecast, dict):
-                        if "usage" in forecast:
-                            usage_projections.append(TsObjectPydantic(
-                                usage_value_in_units=forecast["usage"],
-                                usage_unit="projected_units",
-                                target_date=target_date
-                            ))
-                        if "revenue" in forecast:
-                            revenue_projections.append(TsObjectPydantic(
-                                usage_value_in_units=forecast["revenue"],
-                                usage_unit="projected_revenue_usd",
-                                target_date=target_date
-                            ))
+        # Extract projections from all 3 simulations (prioritize realistic scenario)
+        simulation_keys = ["simulation_2_realistic", "simulation_1_conservative", "simulation_3_optimistic"]
+        
+        for sim_key in simulation_keys:
+            if sim_key in parsed_result:
+                sim_data = parsed_result[sim_key]
+                if "monthly_forecasts" in sim_data:
+                    forecasts = sim_data["monthly_forecasts"]
+                    
+                    # Use realistic scenario for main projections, but store all 3
+                    if sim_key == "simulation_2_realistic":
+                        for i in range(12):
+                            target_date = base_date + timedelta(days=30 * i)
+                            
+                            if isinstance(forecasts, list) and i < len(forecasts):
+                                forecast = forecasts[i]
+                                if isinstance(forecast, dict):
+                                    if "usage" in forecast:
+                                        usage_projections.append(TsObjectPydantic(
+                                            usage_value_in_units=forecast["usage"],
+                                            usage_unit="realistic_scenario_units",
+                                            target_date=target_date
+                                        ))
+                                    if "revenue" in forecast:
+                                        revenue_projections.append(TsObjectPydantic(
+                                            usage_value_in_units=forecast["revenue"],
+                                            usage_unit="realistic_scenario_revenue_usd",
+                                            target_date=target_date
+                                        ))
+                break
         
         return {
             "simulation_result": parsed_result,

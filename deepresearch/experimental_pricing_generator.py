@@ -64,17 +64,19 @@ PRODUCT CONTEXT:
 
 Target Segment: {segment_info}
 
-ROI GAP ANALYSIS:
+TOP 3 ROI GAPS ANALYSIS:
 {roi_gaps}
 
 TASK:
-Design a comprehensive pricing experiment that addresses the identified ROI gaps. Create a specific, actionable experiment plan that can be implemented and measured effectively.
+Design a comprehensive pricing experiment that addresses the TOP 3 identified ROI gaps for this specific segment. Create an experiment plan that:
 
-Focus on creating an experiment that:
-1. Tests a clear hypothesis derived from the ROI gap analysis
-2. Has measurable success criteria
-3. Includes appropriate risk controls
-4. Can provide actionable insights for broader pricing strategy
+1. Prioritizes the highest-impact gap from the top 3 identified
+2. Tests a clear hypothesis derived from the segment-specific gap analysis  
+3. Includes measurable success criteria aligned with gap impact estimates
+4. Incorporates appropriate risk controls based on implementation difficulty
+5. Can provide actionable insights for this customer segment
+
+Focus your experiment design on the most promising gap while considering the implementation feasibility and time-to-impact factors provided in the analysis.
 """
 
     response = await client.responses.create(

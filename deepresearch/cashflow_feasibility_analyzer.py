@@ -65,7 +65,7 @@ Use Case: {usecase}
 EXPERIMENTAL PRICING PLAN:
 {experimental_plan}
 
-SIMULATION RESULTS:
+3-SCENARIO SIMULATION RESULTS:
 {simulation_result}
 
 USAGE PROJECTIONS:
@@ -75,16 +75,17 @@ REVENUE PROJECTIONS:
 {json.dumps([{"value": proj.usage_value_in_units, "unit": proj.usage_unit, "date": proj.target_date.isoformat() if proj.target_date else None} for proj in revenue_projections], indent=2) if revenue_projections else "No revenue projections available"}
 
 TASK:
-Conduct a comprehensive cash flow feasibility analysis for the proposed pricing experiment. Evaluate the financial viability, cash flow impact, and investment requirements.
+Conduct a comprehensive cash flow feasibility analysis for the proposed pricing experiment using the 3-scenario simulation results (Conservative, Realistic, Optimistic). Evaluate the financial viability, cash flow impact, and investment requirements across all scenarios.
 
 Focus on:
-1. Monthly cash flow projections with confidence intervals
-2. Break-even timeline and requirements
-3. Investment needs and financing requirements  
-4. Risk factors that could impact cash flow
-5. Clear go/no-go recommendation with financial rationale
+1. Monthly cash flow projections for all 3 scenarios with confidence intervals
+2. Break-even timeline and requirements under different scenarios
+3. Investment needs and financing requirements across scenarios
+4. Risk factors that could impact cash flow in each scenario
+5. Clear go/no-go recommendation with scenario-based financial rationale
+6. Which scenario(s) to prepare for financially
 
-Provide specific financial metrics and highlight any cash flow concerns that need immediate attention.
+Provide specific financial metrics for each scenario and highlight any cash flow concerns that need immediate attention. Recommend the most prudent scenario for financial planning.
 """
 
     response = await client.responses.create(
