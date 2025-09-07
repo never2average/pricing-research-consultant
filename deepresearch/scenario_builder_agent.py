@@ -9,42 +9,42 @@ async def invoke_agent(pricing_experiment: PricingExperimentPydantic):
     client = get_openai_client()
     
     system_prompt = """
-You are a scenario planning expert specializing in pricing strategy. Create comprehensive scenarios to test pricing experiments under different market conditions.
+You are a scenario planning expert specializing in pricing strategy. Using the COMPLETED simulation results as your foundation, create comprehensive scenario extensions and contingency plans.
 
-SCENARIO BUILDING FRAMEWORK:
-1. Market Environment Scenarios - Bull, bear, and neutral market conditions
-2. Competitive Response Scenarios - How competitors might react
-3. Customer Behavior Scenarios - Different adoption and churn patterns  
-4. Economic Scenarios - Varying budget constraints and spending patterns
-5. Operational Scenarios - Internal capacity and resource constraints
-6. Technology Scenarios - Platform changes and feature evolution
+SCENARIO BUILDING FRAMEWORK (Building on Simulation Results):
+1. Simulation Result Validation - Review the 3 completed simulations (Conservative/Realistic/Optimistic)
+2. Extended Scenario Planning - Identify scenarios beyond the 3 core simulations
+3. Black Swan Event Planning - Low probability, high impact scenarios not covered in simulations
+4. Competitive Response Scenarios - How competitors might react to our pricing moves
+5. Market Disruption Scenarios - External factors that could invalidate simulation assumptions
+6. Operational Contingency Planning - Internal capacity and execution challenges
 
-SCENARIO DIMENSIONS:
-- Market demand levels (high/medium/low growth)
-- Competitive intensity (aggressive/moderate/passive responses)  
-- Customer price sensitivity (elastic/inelastic demand)
-- Economic environment (recession/stable/growth)
-- Internal execution capability (optimal/realistic/constrained)
-- Technology adoption rates (fast/medium/slow)
+ENHANCED SCENARIO DIMENSIONS (Beyond Core Simulations):
+- Extreme market disruptions (economic crisis, technology shifts, regulation changes)
+- Aggressive competitive responses (price wars, feature battles, market flooding)
+- Customer behavior extremes (mass adoption spikes, unexpected churn waves)
+- Internal execution failures (system outages, team capacity limits, implementation delays)
+- Regulatory or compliance changes affecting pricing
+- Technology platform failures or security breaches
 
 OUTPUT FORMAT:
 Provide structured JSON with these exact keys:
-- scenario_matrix: Grid of scenarios with key parameters
-- baseline_scenario: Most likely/expected scenario details
-- optimistic_scenario: Best case scenario and required conditions
-- pessimistic_scenario: Worst case scenario and risk factors
-- black_swan_scenarios: Low probability, high impact events
-- scenario_probabilities: Estimated likelihood of each scenario
-- key_assumptions: Critical assumptions underlying each scenario
-- monitoring_indicators: Early warning signals to track
-- contingency_plans: Response strategies for each scenario type
+- simulation_result_summary: Brief summary of the 3 core simulations received
+- extended_scenarios: Additional scenarios beyond Conservative/Realistic/Optimistic
+- black_swan_scenarios: Low probability, high impact events with mitigation plans
+- competitive_response_matrix: Likely competitor reactions and counter-strategies
+- operational_contingencies: Internal execution risks and backup plans
+- monitoring_indicators: Early warning signals to track for each scenario
+- escalation_triggers: Specific thresholds that require scenario activation
+- contingency_playbooks: Detailed response strategies for each scenario type
 
 REQUIREMENTS:
-- Be specific about market conditions, competitive moves, and customer responses
-- Include quantitative parameters where possible (growth rates, price changes, etc.)
-- Consider both internal and external factors
-- Account for interdependencies between scenario dimensions
-- Provide actionable insights for each scenario
+- Build directly on the provided simulation results - don't duplicate them
+- Focus on scenarios that could invalidate or enhance simulation predictions
+- Include specific trigger points and response protocols
+- Provide quantitative thresholds where possible
+- Account for cascading effects between scenario dimensions
+- Ensure contingency plans are immediately actionable
 """
 
     product_name = pricing_experiment.product.product_name if pricing_experiment.product else "Unknown Product"
@@ -62,20 +62,23 @@ Use Case: {usecase}
 EXPERIMENTAL PRICING PLAN:
 {experimental_plan}
 
-SIMULATION RESULTS:
+COMPLETED 3-SCENARIO SIMULATION RESULTS:
 {simulation_result}
 
 TASK:
-Build comprehensive scenarios for testing the pricing experiment under different market conditions. Create a scenario matrix that covers the key uncertainties and their potential impacts.
+Using the COMPLETED simulation results above as your foundation, build comprehensive scenario extensions and contingency plans that go BEYOND the core Conservative/Realistic/Optimistic simulations.
 
-Focus on scenarios that:
-1. Test the robustness of the pricing strategy
-2. Identify critical success factors and failure modes
-3. Provide early warning indicators to monitor
-4. Suggest contingency plans for different outcomes
-5. Help prioritize which scenarios to prepare for
+The simulations have already covered the basic scenarios. Your job is to identify:
 
-Include specific market conditions, competitive responses, customer behaviors, and internal factors that could affect the experiment's success.
+1. EXTENDED SCENARIOS - What extreme or edge cases weren't covered in the 3 core simulations?
+2. BLACK SWAN EVENTS - Low probability but high impact scenarios that could completely change outcomes
+3. COMPETITIVE RESPONSES - How might competitors react, and how would that change our simulation predictions?
+4. OPERATIONAL CONTINGENCIES - What internal execution risks could derail the simulated outcomes?
+5. MONITORING & TRIGGERS - What early warning signs should we watch for each scenario type?
+
+Do NOT repeat the Conservative/Realistic/Optimistic scenarios already completed. Build contingency plans for scenarios that could make those simulations irrelevant or require immediate strategy pivots.
+
+Focus on actionable contingency playbooks with specific trigger points and response protocols.
 """
 
     response = await client.responses.create(
@@ -97,16 +100,36 @@ Include specific market conditions, competitive responses, customer behaviors, a
 
 
 async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
-    tasks = [invoke_agent(experiment) for experiment in experiments]
+    # Only process experiments that have completed simulations successfully
+    eligible_experiments = [
+        exp for exp in experiments 
+        if exp.experiment_gen_stage == ExperimentGenStage.SIMULATIONS_RUN and 
+           exp.simulation_result and 
+           exp.simulation_result != "No simulation data available"
+    ]
+    
+    if not eligible_experiments:
+        # No experiments ready for scenario building
+        return experiments
+    
+    tasks = [invoke_agent(experiment) for experiment in eligible_experiments]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    for idx, result in enumerate(results):
-        if isinstance(result, Exception):
-            pass
-        else:
-            pass
-        
-        experiments[idx].experiment_gen_stage = ExperimentGenStage.SCENARIO_BUILDER_COMPLETED
+    # Create a mapping of eligible experiments to results
+    eligible_to_result = dict(zip(eligible_experiments, results))
+    
+    # Update all experiments, but only modify those that were processed
+    for experiment in experiments:
+        if experiment in eligible_to_result:
+            result = eligible_to_result[experiment]
+            if isinstance(result, Exception):
+                # Store error but don't fail the experiment
+                pass  # Could store error info if needed
+            else:
+                # Store scenario results (could add a field for this)
+                pass  # Scenario results could be stored in a new field
+            
+            experiment.experiment_gen_stage = ExperimentGenStage.SCENARIO_BUILDER_COMPLETED
     
     return experiments
 

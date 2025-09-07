@@ -53,6 +53,28 @@ REQUIREMENTS:
     objective = pricing_experiment.objective or "Not specified"
     usecase = pricing_experiment.usecase or "Not specified"
 
+    # Parse ROI gaps to extract the focused gap
+    focused_gap_info = "No specific gap identified"
+    gap_priority = "Unknown"
+    
+    try:
+        if roi_gaps and roi_gaps != "No ROI analysis available":
+            gaps_data = json.loads(roi_gaps)
+            if "focused_gap" in gaps_data:
+                focused_gap = gaps_data["focused_gap"]
+                gap_priority = gaps_data.get("gap_priority", "Unknown")
+                focused_gap_info = f"""
+FOCUSED GAP (Priority #{gap_priority}):
+- Gap Name: {focused_gap.get('gap_name', 'Not specified')}
+- Description: {focused_gap.get('gap_description', 'Not specified')}
+- Estimated Impact: {focused_gap.get('estimated_impact_range', 'Not specified')}
+- Implementation Difficulty: {focused_gap.get('implementation_difficulty', 'Not specified')}
+- Time to Impact: {focused_gap.get('time_to_impact', 'Not specified')}
+- Success Probability: {focused_gap.get('success_probability', 'Not specified')}
+"""
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        focused_gap_info = f"Gap analysis data: {roi_gaps}"
+
     user_prompt = f"""
 CONTEXT:
 Product: {product_name}
@@ -64,19 +86,21 @@ PRODUCT CONTEXT:
 
 Target Segment: {segment_info}
 
-TOP 3 ROI GAPS ANALYSIS:
+{focused_gap_info}
+
+FULL ROI CONTEXT (for reference):
 {roi_gaps}
 
 TASK:
-Design a comprehensive pricing experiment that addresses the TOP 3 identified ROI gaps for this specific segment. Create an experiment plan that:
+Design a comprehensive pricing experiment that specifically addresses the FOCUSED GAP identified above. Create an experiment plan that:
 
-1. Prioritizes the highest-impact gap from the top 3 identified
-2. Tests a clear hypothesis derived from the segment-specific gap analysis  
-3. Includes measurable success criteria aligned with gap impact estimates
-4. Incorporates appropriate risk controls based on implementation difficulty
-5. Can provide actionable insights for this customer segment
+1. Directly targets the specific gap identified (Priority #{gap_priority})
+2. Tests a clear hypothesis derived from this gap's characteristics
+3. Includes measurable success criteria aligned with this gap's impact estimates
+4. Incorporates appropriate risk controls based on this gap's implementation difficulty
+5. Considers the time-to-impact timeline for this specific opportunity
 
-Focus your experiment design on the most promising gap while considering the implementation feasibility and time-to-impact factors provided in the analysis.
+Focus your experiment design exclusively on this single gap opportunity, using its specific impact range, difficulty level, and timeline to inform your approach.
 """
 
     response = await client.responses.create(

@@ -5,7 +5,7 @@ import asyncio
 import json
 from typing import List
 from utils.openai_client import get_openai_client
-from datastore.types import PricingExperimentPydantic
+from datastore.types import PricingExperimentPydantic, ExperimentGenStage
 
 
 def _build_vector_store_ids(pricing_experiment: PricingExperimentPydantic):
@@ -95,7 +95,7 @@ async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]
         else:
             experiments[idx].positioning_summary = result.get("positioning_summary")
             experiments[idx].usage_summary = result.get("usage_summary")
-        experiments[idx].experiment_gen_stage = "positioning_usage_analysis_done"
+        experiments[idx].experiment_gen_stage = ExperimentGenStage.MARKETING_ANALYSIS_COMPLETED
     return experiments
 
 

@@ -51,6 +51,7 @@ class ExperimentGenStage(Enum):
     EXPERIMENTAL_PLAN_GENERATED = "experimental_plan_generated"
     SIMULATIONS_RUN = "simulations_run"
     SCENARIO_BUILDER_COMPLETED = "scenario_builder_completed"
+    MARKETING_ANALYSIS_COMPLETED = "marketing_analysis_completed"
     CASHFLOW_FEASIBILITY_RUNS_COMPLETED = "cashflow_feasibility_runs_completed"
     COMPLETED = "completed"
     DEPLOYED = "deployed"

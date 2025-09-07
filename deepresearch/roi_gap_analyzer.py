@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 from typing import List
 from datastore.types import PricingExperimentPydantic, ExperimentGenStage
@@ -90,19 +91,51 @@ Focus on segment-specific insights that differentiate this analysis from generic
 async def invoke_orchestrator_async(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:
     tasks = [invoke_agent(experiment) for experiment in experiments]
     results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    result_experiments = []
 
     for idx, result in enumerate(results):
-        if isinstance(result, Exception):
-            experiments[idx].roi_gaps = f"Error in ROI analysis: {str(result)}"
-        else:
-            if isinstance(result, dict):
-                experiments[idx].roi_gaps = json.dumps(result, indent=2)
-            else:
-                experiments[idx].roi_gaps = str(result)
+        original_experiment = experiments[idx]
         
-        experiments[idx].experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
+        if isinstance(result, Exception):
+            # On error, create one experiment with error info
+            error_experiment = copy.deepcopy(original_experiment)
+            error_experiment.roi_gaps = f"Error in ROI analysis: {str(result)}"
+            error_experiment.experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
+            result_experiments.append(error_experiment)
+        else:
+            # Ensure result is a dict before processing
+            if isinstance(result, dict):
+                # Parse the result to extract the 3 gaps
+                gaps_data = result.get("top_3_gaps", [])
+                
+                # Create 3 separate experiments, one for each gap
+                for gap_idx, gap in enumerate(gaps_data):
+                    new_experiment = copy.deepcopy(original_experiment)
+                    
+                    # Store the full analysis context but focus on this specific gap
+                    gap_focused_result = copy.deepcopy(result)
+                    gap_focused_result["focused_gap"] = gap
+                    gap_focused_result["gap_priority"] = gap_idx + 1  # 1, 2, or 3
+                    
+                    new_experiment.roi_gaps = json.dumps(gap_focused_result, indent=2)
+                    new_experiment.experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
+                    result_experiments.append(new_experiment)
+                
+                # If we don't have any gaps, create at least one experiment
+                if len(gaps_data) == 0:
+                    fallback_experiment = copy.deepcopy(original_experiment)
+                    fallback_experiment.roi_gaps = json.dumps(result, indent=2)
+                    fallback_experiment.experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
+                    result_experiments.append(fallback_experiment)
+            else:
+                # Handle non-dict results
+                fallback_experiment = copy.deepcopy(original_experiment)
+                fallback_experiment.roi_gaps = str(result)
+                fallback_experiment.experiment_gen_stage = ExperimentGenStage.ROI_GAP_ANALYZER_RUN
+                result_experiments.append(fallback_experiment)
     
-    return experiments
+    return result_experiments
 
 
 def invoke_orchestrator(experiments: List[PricingExperimentPydantic]) -> List[PricingExperimentPydantic]:

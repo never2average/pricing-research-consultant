@@ -36,9 +36,14 @@ def get_stage_mapping():
             "request_stage": "simulations_run"
         },
         "scenario_builder_completed": {
-            "orchestrator": [scenario_orchestrator, marketing_orchestrator],
-            "next_stage": "cashflow_feasibility_runs_completed",
+            "orchestrator": scenario_orchestrator,
+            "next_stage": "marketing_analysis_completed", 
             "request_stage": "scenario_builder_completed"
+        },
+        "marketing_analysis_completed": {
+            "orchestrator": marketing_orchestrator,
+            "next_stage": "cashflow_feasibility_runs_completed",
+            "request_stage": "marketing_analysis_completed"
         },
         "cashflow_feasibility_runs_completed": {
             "orchestrator": cashflow_orchestrator,
@@ -55,5 +60,6 @@ def get_stage_order():
         "experimental_plan_generated",
         "simulations_run",
         "scenario_builder_completed",
+        "marketing_analysis_completed",
         "cashflow_feasibility_runs_completed"
     ]
