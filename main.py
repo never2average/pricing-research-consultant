@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from routes.deployment import router as deployment_router
 from routes.experiments import router as experiments_router
 from routes.product_routes import router as product_router
-from routes.customer_segment_routes import router as customer_segment_router
+from routes.customer_segments import router as customer_segment_router
 
 thread_pool = ThreadPoolExecutor(max_workers=4)
 
