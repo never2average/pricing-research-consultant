@@ -8,7 +8,8 @@ from urllib.parse import urlparse
 import httpx
 from mongoengine import URLField, DateTimeField, FloatField, BooleanField
 from mongoengine import Document, StringField, ListField, ReferenceField
-from mongoengine import IntField, EmbeddedDocument, EmbeddedDocumentListField
+from mongoengine import IntField, EmbeddedDocument, EmbeddedDocumentListField, DictField
+from datetime import datetime
 from utils.openai_client import get_openai_client
 from mongoengine import signals
 
@@ -27,6 +28,23 @@ class Competitors(EmbeddedDocument):
     background_research_docs = ListField(URLField())
     competitor_vs_id = StringField()
 
+
+class GoLiveAction(EmbeddedDocument):
+    action_type = StringField(choices=["email_sow", "deploy_orb"], required=True)
+    pricing_name = StringField(required=True)
+    pricing_tiers = ListField(DictField())
+    pricing_model = StringField()
+    effective_date = StringField()
+    customer_segments = ListField(StringField())
+    customer_email = StringField()
+    orb_api_key = StringField()
+    orb_plan_id = StringField()
+    action_status = StringField(choices=["pending", "success", "failed"], default="pending")
+    action_result = DictField()
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+
 class Product(Document):
     product_name = StringField()
     product_industry = StringField()
@@ -43,6 +61,7 @@ class Product(Document):
     product_usage_docs = ListField(URLField())
     product_usage_docs_vs_id = StringField()
     product_competitors = EmbeddedDocumentListField(Competitors)
+    go_live_actions = EmbeddedDocumentListField(GoLiveAction)
     
 
 class TsObject(EmbeddedDocument):

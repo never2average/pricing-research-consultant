@@ -175,31 +175,40 @@ The JSON format organizes data into three main sections: `product`, `pricing_mod
 - **Documentation URLs**: Product documentation URLs help the AI understand your product better for more accurate pricing recommendations.
 - **Numeric Fields**: Ensure satisfaction scores, pricing, and subscription counts are valid numbers.
 
-## How to use it?
+## Getting Started
 
-### Prerequisites
+### Quick Setup
 
+#### Prerequisites
 ```bash
-# Install dependencies
+# 1. Set up environment variables
+export OPENAI_API_KEY="your-openai-api-key"
+export MONGODB_URI="mongodb://localhost:27017/pricing_research"  # Optional
+
+# 2. Install dependencies
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Set API keys
-export OPENAI_API_KEY="your-openai-api-key"
-export TOGETHER_API_KEY="your-together-ai-api-key"
+# 3. Start MongoDB (choose one option):
+# Option A: Local MongoDB
+mongod
 
-# Optional: Set MongoDB connection
-export MONGODB_URI="mongodb://localhost:27017/pricing-research"  # or your Atlas URI
+# Option B: Docker
+docker run -d -p 27017:27017 mongo:latest
+
+# Option C: Use MongoDB Atlas (set MONGODB_URI to your Atlas connection string)
 ```
 
-**MongoDB Options:**
-- **Local**: Install MongoDB and run `mongod`
-- **Cloud**: Use MongoDB Atlas and set `MONGODB_URI`
-- **Docker**: `docker run -d -p 27017:27017 mongo:latest`
+#### One-Command Setup and Run
+```bash
+# This will populate data and run a complete pricing experiment
+python setup_and_run.py
+```
 
-### Usage
+### Usage Methods
 
+#### Command Line Interface
 ```bash
 # Create data from JSON
 python main.py --create path/to/your/data.json
@@ -213,3 +222,207 @@ python main.py --list collection_name
 # Delete data
 python main.py --delete collection_name document_id
 ```
+
+#### Individual Scripts
+```bash
+# Load product data from product_data.json into MongoDB
+python populate_data.py
+
+# List available products
+python run_experiment.py --list-products
+
+# List existing experiments
+python run_experiment.py --list-experiments
+
+# Run a new experiment
+python run_experiment.py --product-id <PRODUCT_ID> \
+  --objective "Optimize pricing for enterprise customers" \
+  --usecase "B2B SaaS pricing strategy"
+```
+
+#### Web Interface
+```bash
+# Start the web server
+python main.py
+
+# Access at http://localhost:8000
+# API docs at http://localhost:8000/docs
+```
+
+### Workflow Stages
+
+The pricing research workflow progresses through these stages:
+
+1. **segments_loaded** - Load and analyze customer segments
+2. **positioning_usage_analysis_done** - Analyze product positioning and usage patterns
+3. **roi_gap_analyzer_run** - Identify ROI gaps and opportunities
+4. **experimental_plan_generated** - Generate experimental pricing plans
+5. **simulations_run** - Run pricing simulations
+6. **scenario_builder_completed** - Build different pricing scenarios
+7. **cashflow_feasibility_runs_completed** - Analyze cashflow feasibility
+8. **completed** - Experiment completed and ready for review
+
+### Example Workflow
+
+```bash
+# 1. Complete setup and first run
+python setup_and_run.py
+
+# 2. Run additional experiments with different parameters
+python run_experiment.py --product-id <ID> \
+  --objective "Test freemium conversion rates" \
+  --usecase "Freemium to paid optimization"
+
+# 3. Start web interface for management
+python main.py
+```
+
+### Output
+
+Each experiment generates:
+- **Positioning analysis** - Market positioning insights
+- **Usage patterns** - Customer usage analysis
+- **ROI gaps** - Identified revenue opportunities
+- **Pricing recommendations** - Experimental pricing strategies
+- **Simulation results** - Projected outcomes
+- **Cashflow analysis** - Financial feasibility assessment
+
+Results are stored in MongoDB and can be accessed via the web interface or directly through the database.
+
+### Troubleshooting
+
+#### MongoDB Connection Issues
+```bash
+# Check if MongoDB is running
+mongod --version
+
+# For Docker:
+docker ps | grep mongo
+
+# Test connection
+python -c "import mongoengine; mongoengine.connect('mongodb://localhost:27017/test')"
+```
+
+#### Missing Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+#### API Key Issues
+```bash
+# Verify your OpenAI API key
+echo $OPENAI_API_KEY
+
+# Test API access
+python -c "from openai import OpenAI; client = OpenAI(); print('API key works!')"
+```
+
+## Advanced Deployment
+
+### GitHub to Lambda Deployment
+
+This system automatically deploys GitHub repositories to AWS Lambda functions with scheduled execution every 120 seconds and comprehensive CloudWatch monitoring.
+
+#### Environment Setup
+
+Copy the `environment.example` file to create your environment configuration:
+
+```bash
+cp environment.example .env
+```
+
+#### Required Environment Variables
+
+**AWS Configuration:**
+```bash
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_DEFAULT_REGION=us-east-1
+```
+
+**Lambda Execution Role:**
+Create an IAM role with the following policies:
+- `AWSLambdaBasicExecutionRole`
+- `CloudWatchEventsFullAccess` (for EventBridge integration)
+- Custom policies as needed for your Lambda functions
+
+```bash
+LAMBDA_EXECUTION_ROLE_ARN=arn:aws:iam::123456789012:role/lambda-execution-role
+```
+
+**CloudWatch Monitoring (Optional):**
+```bash
+ENABLE_CLOUDWATCH_ALARMS=true
+ALARM_EMAIL_ENDPOINT=admin@yourcompany.com
+CLOUDWATCH_ALARM_SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:lambda-alerts
+```
+
+#### IAM Permissions Required
+
+The AWS user/role needs the following permissions:
+
+**Lambda Permissions:**
+- `lambda:CreateFunction`
+- `lambda:UpdateFunctionCode`
+- `lambda:GetFunction`
+- `lambda:AddPermission`
+
+**EventBridge Permissions:**
+- `events:PutRule`
+- `events:PutTargets`
+- `events:DescribeRule`
+
+**CloudWatch Permissions (if alarms enabled):**
+- `cloudwatch:PutMetricAlarm`
+- `sns:CreateTopic`
+- `sns:Subscribe`
+
+**S3 Permissions (if using deployment bucket):**
+- `s3:GetObject`
+- `s3:PutObject`
+
+#### Deployment API Usage
+
+**Deploy a GitHub Repository:**
+```bash
+curl -X POST "http://localhost:8000/deploy-github-to-lambda" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "github_url": "https://github.com/username/repository"
+  }'
+```
+
+**Check Deployment Status:**
+```bash
+curl "http://localhost:8000/lambda-deployment-status/github-deploy-repository"
+```
+
+#### CloudWatch Alarms
+
+When `ENABLE_CLOUDWATCH_ALARMS=true`, the following alarms are automatically created:
+
+1. **Error Alarm**: Triggers when Lambda function has any errors
+2. **Duration Alarm**: Triggers when execution time exceeds 80% of timeout
+3. **Throttle Alarm**: Triggers when Lambda function is throttled
+
+#### Deployment Troubleshooting
+
+**Common Issues:**
+
+1. **Role ARN Missing**: Ensure `LAMBDA_EXECUTION_ROLE_ARN` is set
+2. **Permission Denied**: Check IAM permissions listed above
+3. **Git Clone Failed**: Ensure repository is public or GitHub token is configured
+4. **Alarm Creation Failed**: Check CloudWatch and SNS permissions
+
+**Log Locations:**
+- Lambda execution logs: CloudWatch Logs `/aws/lambda/{function-name}`
+- Deployment logs: Application logs
+- Alarm notifications: SNS topic configured
+
+#### Security Best Practices
+
+1. Use IAM roles instead of access keys when running on EC2
+2. Rotate access keys regularly
+3. Use least privilege principle for IAM permissions
+4. Store sensitive environment variables securely
+5. Enable CloudTrail for audit logging

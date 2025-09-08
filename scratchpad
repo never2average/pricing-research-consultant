@@ -1,0 +1,75 @@
+1. Positioning Analysis Agent (analyse_positioning_material.py)
+Purpose: Analyzes market positioning and pricing strategy alignment
+Input: Product data, experimental pricing research, pricing objective
+Tools: Web search, file search (marketing vector store)
+Output: Positioning analysis report
+
+Doubt: How do you analyse what your positioning for the product is as per your competitors?
+
+2. Cashflow Analyst Agent (cashflow_analyst.py)
+Purpose: Analyzes financial impact and cashflow implications of pricing strategies
+Components: Main agent + Refinement agent
+Input: Product data, pricing research, positioning/persona feedback
+Tools: Web search, file search
+Output: Cashflow analysis with refinement based on feedback
+
+Doubt: The tool calling over here has to be very custom and precise. 
+
+3. Competitive Analysis Agent (competitive_analysis.py)
+Purpose: Analyzes competitive landscape and pricing strategies
+Input: Product data, competitor information, pricing objective
+Tools: Web search, file search (product/marketing vector stores)
+Output: Competitive intelligence report
+
+Doubt: How do you analyse competitors' over their own pricing and what tooling and data sources to use?
+
+4. Long-term Revenue Potential Agent (customer_longterm_revenue_potential.py)
+Purpose: Analyzes customer lifetime value and long-term revenue potential
+Input: Product research, segment research, pricing research
+Tools: Web search, file search
+Output: LTV and revenue potential analysis
+
+Doubt: How do you revenue projections in a profile aware manner for customers?
+
+5. Experimental Pricing Recommendation Agent (experimental_pricing_recommendation.py)
+Purpose: Generates experimental pricing recommendations with structured output
+Components: OpenAI analysis + LiteLLM structured parsing
+Input: Value capture analysis, pricing objective
+Tools: Code interpreter
+Output: Structured pricing models and customer segments (saved to database)
+
+Doubt: Does this need code tool? I dont think so.
+
+6. Persona-based Simulation Agent (persona_based_simulation.py)
+Purpose: Simulates customer personas and their response to pricing strategies
+Input: Product data, experimental pricing research
+Tools: Web search, file search
+Output: Persona simulation analysis
+
+Doubt: how strongly can you inject persona into the LLM for testing simulations?
+
+7. Pricing Analysis Agent (pricing_analysis.py)
+Purpose: Comprehensive pricing analysis with forecasting
+Input: Product data, customer segments, pricing objective
+Components: Data aggregation + AI analysis + Database storage
+Tools: Web search, code interpreter, file search
+Output: Pricing analysis with forecast data saved to database
+
+8. Product Offering Agent (product_offering.py)
+Purpose: Performs deep research on product offerings
+Input: Product data, usage scope, pricing objective
+Tools: Web search, file search, code interpreter
+Output: Product research and analysis
+
+9. Segmentwise ROI Agent (segmentwise_roi.py)
+Purpose: Analyzes ROI by customer segments
+Input: Product research, customer segments, usage analysis, pricing data
+Components: Data aggregation + sampling + AI analysis
+Tools: Code interpreter
+Output: Segment-wise ROI analysis
+
+10. Value Capture Analysis Agent (value_capture_analysis.py)
+Purpose: Analyzes value capture opportunities and gaps
+Input: Segment ROI analysis, pricing analysis, product research
+Tools: Code interpreter, custom "rabbithole" function
+Output: Value capture optimization recommendations

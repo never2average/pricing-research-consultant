@@ -246,28 +246,6 @@ async def create_product_integration(integration: CreateProductIntegrationReques
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/productsources/list", response_model=List[DataSourceAPI])
-async def get_product_sources():
-    try:
-        return []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/revenuesources/list", response_model=List[DataSourceAPI])
-async def get_revenue_sources():
-    try:
-        return []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/customersegmentsources/list", response_model=List[DataSourceAPI])
-async def get_customer_segment_sources():
-    try:
-        return []
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/envs/get", response_model=EnvironmentConfigAPI)

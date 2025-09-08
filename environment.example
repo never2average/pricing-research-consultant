@@ -1,0 +1,38 @@
+# AWS Configuration for Lambda Deployment
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_DEFAULT_REGION=us-east-1
+
+# Lambda Execution Role
+# This role should have permissions for:
+# - AWSLambdaBasicExecutionRole
+# - CloudWatchEventsFullAccess (if Lambda needs to interact with EventBridge)
+# - Any custom permissions your Lambda functions require
+LAMBDA_EXECUTION_ROLE_ARN=arn:aws:iam::123456789012:role/lambda-execution-role
+
+# CloudWatch Configuration
+CLOUDWATCH_LOG_GROUP_RETENTION_DAYS=14
+CLOUDWATCH_ALARM_SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:lambda-deployment-alerts
+
+# GitHub Integration (optional)
+# If you need to authenticate with private repositories
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Lambda Function Configuration
+LAMBDA_DEFAULT_TIMEOUT=300
+LAMBDA_DEFAULT_MEMORY=128
+LAMBDA_DEFAULT_RUNTIME=python3.9
+
+# Deployment Settings
+DEPLOYMENT_BUCKET=your-lambda-deployment-bucket
+DEPLOYMENT_PREFIX=lambda-deployments/
+
+# Monitoring and Alerting
+ENABLE_CLOUDWATCH_ALARMS=true
+ALARM_EMAIL_ENDPOINT=admin@yourcompany.com
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+
+# Environment Tags (optional)
+ENVIRONMENT=production
+PROJECT_NAME=pricing-research-consultant
+TEAM=engineering
