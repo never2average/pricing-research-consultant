@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from routes.deployment import router as deployment_router
 from routes.experiments import router as experiments_router
-from routes.api_routes import router as api_router
+from routes.product_routes import router as product_router
+from routes.customer_segment_routes import router as customer_segment_router
 
 thread_pool = ThreadPoolExecutor(max_workers=4)
 
@@ -25,7 +26,8 @@ app.add_middleware(
 
 app.include_router(experiments_router)
 app.include_router(deployment_router)
-app.include_router(api_router)
+app.include_router(product_router)
+app.include_router(customer_segment_router)
 
 if __name__ == "__main__":
     import uvicorn
