@@ -3,12 +3,12 @@ from typing import List, Optional
 import json
 import os
 from datetime import datetime, timezone
-from datastore.api_types import ProductAPI, SuccessResponseAPI, DeleteRequestAPI
+from datastore.types import ProductResponse, CompetitorResponse
 from datastore.models import Product, PricingExperimentRequest, PricingExperimentRuns
 
 router = APIRouter()
 
-@router.get("/products", response_model=List[ProductAPI])
+@router.get("/products", response_model=List[ProductResponse])
 async def get_all_products():
     try:
         products = []
@@ -17,7 +17,7 @@ async def get_all_products():
         try:
             db_products = Product.objects()
             for product in db_products:
-                product_api = ProductAPI(
+                product_api = ProductResponse(
                     _id=str(product.id),
                     name=product.product_name or "",
                     icp_description=product.product_icp_summary or "",
@@ -39,7 +39,7 @@ async def get_all_products():
                         data = json.load(f)
                         product_data = data.get("product", {})
                         if product_data:
-                            sample_product = ProductAPI(
+                            sample_product = ProductResponse(
                                 _id="sample_product_1",
                                 name=product_data.get("name", ""),
                                 icp_description=product_data.get("icp_description", ""),
@@ -138,8 +138,8 @@ async def get_experiments_by_product_ids(product_ids: List[str] = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/products", response_model=ProductAPI)
-async def create_product(product: ProductAPI):
+@router.post("/products", response_model=ProductResponse)
+async def create_product(product: ProductResponse):
     try:
         # Create new product in database
         current_time = datetime.now(timezone.utc)
@@ -158,7 +158,7 @@ async def create_product(product: ProductAPI):
         new_product.save()
         
         # Return the created product
-        result = ProductAPI(
+        result = ProductResponse(
             _id=str(new_product.id),
             name=new_product.product_name or "",
             icp_description=new_product.product_icp_summary or "",
@@ -175,8 +175,8 @@ async def create_product(product: ProductAPI):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/products/{product_id}", response_model=ProductAPI)
-async def update_product(product_id: str, product: ProductAPI):
+@router.put("/products/{product_id}", response_model=ProductResponse)
+async def update_product(product_id: str, product: ProductResponse):
     try:
         # Find the existing product
         existing_product = Product.objects(id=product_id).first()
@@ -203,7 +203,7 @@ async def update_product(product_id: str, product: ProductAPI):
         updated_product = Product.objects(id=product_id).first()
         
         # Return the updated product
-        result = ProductAPI(
+        result = ProductResponse(
             _id=str(updated_product.id),
             name=updated_product.product_name or "",
             icp_description=updated_product.product_icp_summary or "",
@@ -222,7 +222,7 @@ async def update_product(product_id: str, product: ProductAPI):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/products/{product_id}", response_model=SuccessResponseAPI)
+@router.delete("/products/{product_id}")
 async def delete_product(product_id: str):
     try:
         # Find the existing product
@@ -233,7 +233,7 @@ async def delete_product(product_id: str):
         # Delete the product
         existing_product.delete()
         
-        return SuccessResponseAPI(success=True)
+        return {"success": True}
     except HTTPException:
         raise
     except Exception as e:

@@ -4,6 +4,35 @@ from datetime import datetime
 from enum import Enum
 
 
+class CustomerSegmentResponse(BaseModel):
+    _id: Optional[str] = None
+    product: Optional[str] = None
+    customer_segment_uid: str
+    customer_segment_name: str
+    customer_segment_description: str
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class CompetitorResponse(BaseModel):
+    competitor_name: str
+    website_url: str
+    product_description: str
+
+
+class ProductResponse(BaseModel):
+    _id: Optional[str] = None
+    name: str
+    icp_description: Optional[str] = None
+    unit_level_cogs: Optional[str] = None
+    features_description_summary: Optional[str] = None
+    competitors: Optional[List[CompetitorResponse]] = None
+    product_documentations: Optional[List[str]] = None
+    vector_store_id: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
 class TsObjectPydantic(BaseModel):
     usage_value_in_units: Optional[float] = None
     usage_unit: Optional[str] = None

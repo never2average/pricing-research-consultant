@@ -1,23 +1,19 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from datetime import datetime, timezone
-from datastore.api_types import (
-    CustomerSegmentAPI, SegmentPlanLinkAPI, SegmentPlanLinkWithDetailsAPI, 
-    SuccessResponseAPI, CreateSegmentPlanLinkRequestAPI, UpdateSegmentPlanLinkRequestAPI, 
-    DeleteRequestAPI
-)
+from datastore.types import CustomerSegmentResponse
 from datastore.models import CustomerSegment
 
 router = APIRouter()
 
-@router.get("/customer-segments", response_model=List[CustomerSegmentAPI])
+@router.get("/customer-segments", response_model=List[CustomerSegmentResponse])
 async def get_customer_segments():
     try:
         segments = []
         db_segments = CustomerSegment.objects()
         
         for segment in db_segments:
-            segment_api = CustomerSegmentAPI(
+            segment_api = CustomerSegmentResponse(
                 _id=str(segment.id),
                 product=None,
                 customer_segment_uid=segment.segment_cdp_uid or "",
@@ -33,14 +29,14 @@ async def get_customer_segments():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/customer-segments/{segment_id}", response_model=CustomerSegmentAPI)
+@router.get("/customer-segments/{segment_id}", response_model=CustomerSegmentResponse)
 async def get_customer_segment(segment_id: str):
     try:
         segment = CustomerSegment.objects(id=segment_id).first()
         if not segment:
             raise HTTPException(status_code=404, detail="Customer segment not found")
         
-        return CustomerSegmentAPI(
+        return CustomerSegmentResponse(
             _id=str(segment.id),
             product=None,
             customer_segment_uid=segment.segment_cdp_uid or "",
@@ -55,8 +51,8 @@ async def get_customer_segment(segment_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/customer-segments", response_model=CustomerSegmentAPI)
-async def create_customer_segment(segment: CustomerSegmentAPI):
+@router.post("/customer-segments", response_model=CustomerSegmentResponse)
+async def create_customer_segment(segment: CustomerSegmentResponse):
     try:
         # Create new customer segment in database
         new_segment = CustomerSegment(
@@ -72,7 +68,7 @@ async def create_customer_segment(segment: CustomerSegmentAPI):
         current_time = datetime.now(timezone.utc).isoformat()
         
         # Return the created segment
-        return CustomerSegmentAPI(
+        return CustomerSegmentResponse(
             _id=str(new_segment.id),
             product=segment.product,
             customer_segment_uid=new_segment.segment_cdp_uid or "",
@@ -85,8 +81,8 @@ async def create_customer_segment(segment: CustomerSegmentAPI):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/customer-segments/{segment_id}", response_model=CustomerSegmentAPI)
-async def update_customer_segment(segment_id: str, segment: CustomerSegmentAPI):
+@router.put("/customer-segments/{segment_id}", response_model=CustomerSegmentResponse)
+async def update_customer_segment(segment_id: str, segment: CustomerSegmentResponse):
     try:
         # Find the existing segment
         existing_segment = CustomerSegment.objects(id=segment_id).first()
@@ -112,7 +108,7 @@ async def update_customer_segment(segment_id: str, segment: CustomerSegmentAPI):
         current_time = datetime.now(timezone.utc).isoformat()
         
         # Return the updated segment
-        return CustomerSegmentAPI(
+        return CustomerSegmentResponse(
             _id=str(updated_segment.id),
             product=segment.product,
             customer_segment_uid=updated_segment.segment_cdp_uid or "",
@@ -127,7 +123,7 @@ async def update_customer_segment(segment_id: str, segment: CustomerSegmentAPI):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/customer-segments/{segment_id}", response_model=SuccessResponseAPI)
+@router.delete("/customer-segments/{segment_id}")
 async def delete_customer_segment(segment_id: str):
     try:
         # Find the existing segment
@@ -138,67 +134,8 @@ async def delete_customer_segment(segment_id: str):
         # Delete the segment
         existing_segment.delete()
         
-        return SuccessResponseAPI(success=True)
+        return {"success": True}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Segment-Plan Link endpoints (related to customer segments)
-@router.post("/customer-segments/pricing-plan/link", response_model=SegmentPlanLinkAPI)
-async def create_segment_plan_link(link: CreateSegmentPlanLinkRequestAPI):
-    try:
-        current_time = datetime.now(timezone.utc).isoformat()
-        
-        # For now, returning mock data - this would need proper database model implementation
-        result = SegmentPlanLinkAPI(
-            _id="generated_link_id",
-            customer_segment_id=link.customer_segment_id,
-            pricing_plan_id=link.pricing_plan_id,
-            connection_type=link.connection_type,
-            created_at=current_time,
-            updated_at=current_time,
-            is_active=True
-        )
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/customer-segments/pricing-plan/link/{link_id}", response_model=SegmentPlanLinkAPI)
-async def update_segment_plan_link(link_id: str, request: UpdateSegmentPlanLinkRequestAPI):
-    try:
-        current_time = datetime.now(timezone.utc).isoformat()
-        
-        # For now, returning mock data - this would need proper database model implementation
-        result = SegmentPlanLinkAPI(
-            _id=link_id,
-            customer_segment_id=request.customer_segment_id or "existing_segment_id",
-            pricing_plan_id=request.pricing_plan_id or "existing_plan_id",
-            connection_type=request.connection_type or "finalized",
-            percentage=request.percentage,
-            updated_at=current_time,
-            is_active=request.is_active
-        )
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/customer-segments/pricing-plan/link/{link_id}", response_model=SuccessResponseAPI)
-async def delete_segment_plan_link(link_id: str):
-    try:
-        # For now, returning success - this would need proper database implementation
-        return SuccessResponseAPI(success=True)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/customer-segments/pricing-plan/links", response_model=List[SegmentPlanLinkWithDetailsAPI])
-async def get_all_segment_plan_links(suggestions: bool = False):
-    try:
-        # For now, returning empty list - this would need proper database implementation
-        return []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
