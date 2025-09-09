@@ -331,3 +331,31 @@ async def get_product_golive_actions_endpoint(product_id: str):
         else:
             raise HTTPException(status_code=500, detail=result["message"])
 
+
+@router.get("/llmstxt/get")
+async def get_llms_txt_config(product_tool: str = "Mixpanel", customer_tool: str = "Twilio Segment", revenue_tool: str = "Stripe"):
+    """Get LLMs.txt configuration for integrated platform setup"""
+    try:
+        config = generate_llms_integrator_primer(product_tool, customer_tool, revenue_tool)
+        return {
+            "llms_txt_context": config.llms_txt_context,
+            "llms_txt_cover_text": config.llms_txt_cover_text
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate LLMs.txt config: {str(e)}")
+
+
+@router.get("/envs/get")
+async def get_environment_variables(product_tool: str = "Mixpanel", customer_tool: str = "Twilio Segment", revenue_tool: str = "Stripe"):
+    """Get environment variables needed for integrated platform setup"""
+    try:
+        config = generate_llms_integrator_primer(product_tool, customer_tool, revenue_tool)
+        return {
+            "env_vars": config.env_vars,
+            "product_tool": product_tool,
+            "customer_tool": customer_tool,
+            "revenue_tool": revenue_tool
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate environment variables: {str(e)}")
+

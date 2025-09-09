@@ -174,6 +174,68 @@ async def get_all_experiment_runs(experiment_number: int):
             "deployed_on": str(latest_completed_run.experiment_deployed_on) if latest_completed_run and latest_completed_run.experiment_deployed_on else None,
             "all_runs": runs_data
         }
-        
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/historical/allruns")
+async def get_all_historical_runs():
+    """Get all experiment runs across all experiments for historical analysis"""
+    try:
+        all_runs = PricingExperimentRuns.objects().order_by('-created_on')
+
+        runs_data = []
+        for run in all_runs:
+            runs_data.append({
+                "run_id": str(run.id),
+                "request_id": str(run.experiment_request.id),
+                "product_name": run.experiment_request.product.product_name,
+                "product_id": str(run.experiment_request.product.id),
+                "experiment_number": run.experiment_request.experiment_number,
+                "experiment_gen_stage": run.experiment_gen_stage,
+                "request_gen_stage": run.experiment_request.experiment_gen_stage if run.experiment_request.experiment_gen_stage else None,
+                "objective": run.experiment_request.objective if run.experiment_request.objective else None,
+                "usecase": run.experiment_request.usecase if run.experiment_request.usecase else None,
+                "positioning_summary": run.positioning_summary if run.positioning_summary else None,
+                "usage_summary": run.usage_summary if run.usage_summary else None,
+                "roi_gaps": run.roi_gaps if run.roi_gaps else None,
+                "experimental_pricing_plan": run.experimental_pricing_plan if run.experimental_pricing_plan else None,
+                "simulation_result": run.simulation_result if run.simulation_result else None,
+                "usage_projections": [
+                    {
+                        "usage_value_in_units": proj.usage_value_in_units,
+                        "usage_unit": proj.usage_unit,
+                        "target_date": str(proj.target_date) if proj.target_date else None
+                    } for proj in run.usage_projections
+                ] if run.usage_projections else None,
+                "revenue_projections": [
+                    {
+                        "usage_value_in_units": proj.usage_value_in_units,
+                        "usage_unit": proj.usage_unit,
+                        "target_date": str(proj.target_date) if proj.target_date else None
+                    } for proj in run.revenue_projections
+                ] if run.revenue_projections else None,
+                "cashflow_feasibility_comments": run.cashflow_feasibility_comments if run.cashflow_feasibility_comments else None,
+                "cashflow_no_negative_impact_approval_given": run.cashflow_no_negative_impact_approval_given,
+                "experiment_feedback_summary": run.experiment_feedback_summary if run.experiment_feedback_summary else None,
+                "experiment_is_deployed": run.experiment_is_deployed,
+                "experiment_deployed_on": str(run.experiment_deployed_on) if run.experiment_deployed_on else None,
+                "run_created_on": str(run.created_on) if run.created_on else None,
+                "request_created_on": str(run.experiment_request.created_on) if run.experiment_request.created_on else None,
+                "relevant_segments": [
+                    {
+                        "segment_name": seg.segment_name,
+                        "segment_cdp_uid": seg.segment_cdp_uid,
+                        "segment_description": seg.segment_description,
+                        "segment_filter_logic": seg.segment_filter_logic,
+                        "segment_usage_summary": seg.segment_usage_summary,
+                        "segment_revenue_attribution_summary": seg.segment_revenue_attribution_summary
+                    } for seg in run.relevant_segments
+                ] if run.relevant_segments else None
+            })
+
+        return {"all_runs": runs_data, "total_count": len(runs_data)}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

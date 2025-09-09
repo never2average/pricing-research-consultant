@@ -6,6 +6,7 @@ from routes.deployment import router as deployment_router
 from routes.experiments import router as experiments_router
 from routes.product_routes import router as product_router
 from routes.customer_segments import router as customer_segment_router
+from routes.data_sources import router as data_sources_router
 
 thread_pool = ThreadPoolExecutor(max_workers=4)
 
@@ -28,6 +29,7 @@ app.include_router(experiments_router)
 app.include_router(deployment_router)
 app.include_router(product_router)
 app.include_router(customer_segment_router)
+app.include_router(data_sources_router)
 
 if __name__ == "__main__":
     import uvicorn

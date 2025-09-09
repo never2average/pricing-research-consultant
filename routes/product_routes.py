@@ -60,6 +60,12 @@ async def get_all_products():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/product/list", response_model=List[ProductResponse])
+async def get_product_list():
+    """Alias route for /products to maintain compatibility"""
+    return await get_all_products()
+
+
 @router.get("/products/experiments")
 async def get_experiments_by_product_ids(product_ids: List[str] = Query(...)):
     try:
